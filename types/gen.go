@@ -32,6 +32,13 @@ func main() {
 	}
 	json.Unmarshal(b, &or)
 
+	// Create a global functions file
+	startm := fmt.Sprintf(`
+func Migrate(db *gorm.DB) error {
+	`)
+
+	finishm := `}`
+
 	for _, o := range or.Offers {
 		fmt.Println("Writing: " + o.Code)
 		res, err := http.Get(baseUrl + o.CurrentVersionUrl)
@@ -49,9 +56,13 @@ func main() {
 			panic(err)
 		}
 
+		startm = startm + fmt.Sprintf("\tdb.AutoMigrate(&%s{})\n")
 		go ProcessForSchema(raw, o.Code, baseUrl+o.CurrentVersionUrl)
 		// ioutil.WriteFile("./raw/"+o.Code+".json", b, 0655)
 	}
+
+	finalm := startm + finishm
+	ioutil.WriteFile("./schema/global.go", []byte(finalm), 0655)
 }
 
 type Structure map[string]interface{}
@@ -64,9 +75,11 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type %s struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
@@ -95,7 +108,7 @@ type %s_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions %s_Term_PriceDimensions
+	PriceDimensions map[string]%s_Term_PriceDimensions
 	TermAttributes %s_Term_TermAttributes
 }
 
