@@ -4,38 +4,40 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type CodeBuild struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]CodeBuild_Product
-	Terms		map[string]map[string]CodeBuild_Term
+	Terms		map[string]map[string]map[string]CodeBuild_Term
 }
 type CodeBuild_Product struct {	Attributes	CodeBuild_Product_Attributes
 	Sku	string
 	ProductFamily	string
 }
-type CodeBuild_Product_Attributes struct {	Servicecode	string
-	Location	string
-	Vcpu	string
+type CodeBuild_Product_Attributes struct {	Vcpu	string
 	Memory	string
-	ComputeType	string
-	LocationType	string
-	OperatingSystem	string
-	Usagetype	string
 	Operation	string
+	ComputeType	string
+	Location	string
+	LocationType	string
+	Usagetype	string
 	ComputeFamily	string
+	Servicecode	string
+	OperatingSystem	string
 }
 
 type CodeBuild_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions CodeBuild_Term_PriceDimensions
+	PriceDimensions map[string]CodeBuild_Term_PriceDimensions
 	TermAttributes CodeBuild_Term_TermAttributes
 }
 
@@ -56,6 +58,28 @@ type CodeBuild_Term_PricePerUnit struct {
 
 type CodeBuild_Term_TermAttributes struct {
 
+}
+func (a CodeBuild) QueryProducts(q func(product CodeBuild_Product) bool) []CodeBuild_Product{
+	ret := []CodeBuild_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a CodeBuild) QueryTerms(t string, q func(product CodeBuild_Term) bool) []CodeBuild_Term{
+	ret := []CodeBuild_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *CodeBuild) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/CodeBuild/current/index.json"

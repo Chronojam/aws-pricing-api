@@ -4,49 +4,38 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonRDS struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonRDS_Product
-	Terms		map[string]map[string]AmazonRDS_Term
+	Terms		map[string]map[string]map[string]AmazonRDS_Term
 }
-type AmazonRDS_Product struct {	ProductFamily	string
-	Attributes	AmazonRDS_Product_Attributes
+type AmazonRDS_Product struct {	Attributes	AmazonRDS_Product_Attributes
 	Sku	string
+	ProductFamily	string
 }
-type AmazonRDS_Product_Attributes struct {	Location	string
-	LocationType	string
-	InstanceType	string
-	CurrentGeneration	string
-	DatabaseEngine	string
-	DeploymentOption	string
+type AmazonRDS_Product_Attributes struct {	ToLocation	string
+	ToLocationType	string
 	Usagetype	string
 	Operation	string
 	Servicecode	string
-	Vcpu	string
-	Storage	string
-	NetworkPerformance	string
-	EngineCode	string
-	InstanceFamily	string
-	ClockSpeed	string
-	DatabaseEdition	string
-	LicenseModel	string
-	PhysicalProcessor	string
-	Memory	string
-	ProcessorArchitecture	string
-	ProcessorFeatures	string
+	TransferType	string
+	FromLocation	string
+	FromLocationType	string
 }
 
 type AmazonRDS_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonRDS_Term_PriceDimensions
+	PriceDimensions map[string]AmazonRDS_Term_PriceDimensions
 	TermAttributes AmazonRDS_Term_TermAttributes
 }
 
@@ -67,6 +56,28 @@ type AmazonRDS_Term_PricePerUnit struct {
 
 type AmazonRDS_Term_TermAttributes struct {
 
+}
+func (a AmazonRDS) QueryProducts(q func(product AmazonRDS_Product) bool) []AmazonRDS_Product{
+	ret := []AmazonRDS_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonRDS) QueryTerms(t string, q func(product AmazonRDS_Term) bool) []AmazonRDS_Term{
+	ret := []AmazonRDS_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonRDS) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/index.json"

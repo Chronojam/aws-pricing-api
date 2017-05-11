@@ -34,10 +34,18 @@ func main() {
 
 	// Create a global functions file
 	startm := fmt.Sprintf(`
-func Migrate(db *gorm.DB) error {
-	`)
+package schema
 
-	finishm := `}`
+import (
+	"github.com/jinzhu/gorm"
+)
+
+func Migrate(db *gorm.DB) error {
+`)
+
+	finishm := `
+	return nil
+}`
 
 	for _, o := range or.Offers {
 		fmt.Println("Writing: " + o.Code)
@@ -56,8 +64,8 @@ func Migrate(db *gorm.DB) error {
 			panic(err)
 		}
 
-		startm = startm + fmt.Sprintf("\tdb.AutoMigrate(&%s{})\n")
-		go ProcessForSchema(raw, o.Code, baseUrl+o.CurrentVersionUrl)
+		startm = startm + fmt.Sprintf("\tdb.AutoMigrate(&%s{})\n", strings.Title(o.Code))
+		ProcessForSchema(raw, o.Code, baseUrl+o.CurrentVersionUrl)
 		// ioutil.WriteFile("./raw/"+o.Code+".json", b, 0655)
 	}
 
@@ -86,7 +94,7 @@ type %s struct {
 	Version		string
 	PublicationDate	string
 	Products	map[string]%s_Product
-	Terms		map[string]map[string]%s_Term`, tName, tName, tName)
+	Terms		map[string]map[string]map[string]%s_Term`, tName, tName, tName)
 	middling := "\n"
 	finish := "}\n"
 
@@ -109,7 +117,7 @@ type %s_Term struct {
 	Sku	string
 	EffectiveDate string
 	PriceDimensions map[string]%s_Term_PriceDimensions
-	TermAttributes %s_Term_TermAttributes
+	TermAttributes map[string]string
 }
 
 type %s_Term_PriceDimensions struct {
@@ -125,13 +133,35 @@ type %s_Term_PriceDimensions struct {
 
 type %s_Term_PricePerUnit struct {
 	USD	string
-}
-
-type %s_Term_TermAttributes struct {
-
-}`, tName, tName, tName, tName, tName, tName, tName)
+}`, tName, tName, tName, tName, tName, tName)
 
 	// Add some helper functions to pull api data.
+	finish = finish + fmt.Sprintf(`
+func (a %s) QueryProducts(q func(product %s_Product) bool) []%s_Product{
+	ret := []%s_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}`, tName, tName, tName, tName)
+
+	finish = finish + fmt.Sprintf(`
+func (a %s) QueryTerms(t string, q func(product %s_Term) bool) []%s_Term{
+	ret := []%s_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
+}`, tName, tName, tName, tName)
+
 	finish = finish + fmt.Sprintf(`
 func (a *%s) Refresh() error {
 	var url = "%s"
@@ -205,18 +235,6 @@ func (o Structure) NewStruct(name string, val map[string]interface{}) string {
 
 func ProcessForSchema(raw map[string]interface{}, code string, url string) {
 	obj := Structure{}
-	/*for k, i := range raw {
-		val, ok := i.(map[string]interface{})
-		if ok {
-			obj[k] = recurse(val)
-		}
-	}*/
-
-	for k, i := range obj {
-		fmt.Println(k)
-		fmt.Println(i)
-	}
-
 	out := obj.Test(code, raw, url)
-	ioutil.WriteFile("./schema/"+code+".go", []byte(out), 0655)
+	ioutil.WriteFile("./schema/"+strings.Title(code)+".go", []byte(out), 0655)
 }

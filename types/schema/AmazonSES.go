@@ -4,20 +4,22 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonSES struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonSES_Product
-	Terms		map[string]map[string]AmazonSES_Term
+	Terms		map[string]map[string]map[string]AmazonSES_Term
 }
-type AmazonSES_Product struct {	Sku	string
+type AmazonSES_Product struct {	Attributes	AmazonSES_Product_Attributes
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonSES_Product_Attributes
 }
 type AmazonSES_Product_Attributes struct {	ToLocation	string
 	ToLocationType	string
@@ -33,7 +35,7 @@ type AmazonSES_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonSES_Term_PriceDimensions
+	PriceDimensions map[string]AmazonSES_Term_PriceDimensions
 	TermAttributes AmazonSES_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type AmazonSES_Term_PricePerUnit struct {
 
 type AmazonSES_Term_TermAttributes struct {
 
+}
+func (a AmazonSES) QueryProducts(q func(product AmazonSES_Product) bool) []AmazonSES_Product{
+	ret := []AmazonSES_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonSES) QueryTerms(t string, q func(product AmazonSES_Term) bool) []AmazonSES_Term{
+	ret := []AmazonSES_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonSES) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSES/current/index.json"

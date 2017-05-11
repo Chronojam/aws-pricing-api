@@ -4,34 +4,36 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSCodeCommit struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSCodeCommit_Product
-	Terms		map[string]map[string]AWSCodeCommit_Term
+	Terms		map[string]map[string]map[string]AWSCodeCommit_Term
 }
 type AWSCodeCommit_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AWSCodeCommit_Product_Attributes
 }
-type AWSCodeCommit_Product_Attributes struct {	Servicecode	string
-	Location	string
-	LocationType	string
-	Group	string
+type AWSCodeCommit_Product_Attributes struct {	Group	string
 	Usagetype	string
 	Operation	string
+	Servicecode	string
+	Location	string
+	LocationType	string
 }
 
 type AWSCodeCommit_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSCodeCommit_Term_PriceDimensions
+	PriceDimensions map[string]AWSCodeCommit_Term_PriceDimensions
 	TermAttributes AWSCodeCommit_Term_TermAttributes
 }
 
@@ -52,6 +54,28 @@ type AWSCodeCommit_Term_PricePerUnit struct {
 
 type AWSCodeCommit_Term_TermAttributes struct {
 
+}
+func (a AWSCodeCommit) QueryProducts(q func(product AWSCodeCommit_Product) bool) []AWSCodeCommit_Product{
+	ret := []AWSCodeCommit_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSCodeCommit) QueryTerms(t string, q func(product AWSCodeCommit_Term) bool) []AWSCodeCommit_Term{
+	ret := []AWSCodeCommit_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSCodeCommit) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSCodeCommit/current/index.json"

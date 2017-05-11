@@ -4,36 +4,38 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSStorageGateway struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSStorageGateway_Product
-	Terms		map[string]map[string]AWSStorageGateway_Term
+	Terms		map[string]map[string]map[string]AWSStorageGateway_Term
 }
 type AWSStorageGateway_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AWSStorageGateway_Product_Attributes
 }
-type AWSStorageGateway_Product_Attributes struct {	StorageDescription	string
-	Servicecode	string
-	Location	string
-	LocationType	string
-	StorageClass	string
+type AWSStorageGateway_Product_Attributes struct {	ToLocation	string
+	ToLocationType	string
 	Usagetype	string
 	Operation	string
-	MaximumCapacity	string
+	Servicecode	string
+	TransferType	string
+	FromLocation	string
+	FromLocationType	string
 }
 
 type AWSStorageGateway_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSStorageGateway_Term_PriceDimensions
+	PriceDimensions map[string]AWSStorageGateway_Term_PriceDimensions
 	TermAttributes AWSStorageGateway_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type AWSStorageGateway_Term_PricePerUnit struct {
 
 type AWSStorageGateway_Term_TermAttributes struct {
 
+}
+func (a AWSStorageGateway) QueryProducts(q func(product AWSStorageGateway_Product) bool) []AWSStorageGateway_Product{
+	ret := []AWSStorageGateway_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSStorageGateway) QueryTerms(t string, q func(product AWSStorageGateway_Term) bool) []AWSStorageGateway_Term{
+	ret := []AWSStorageGateway_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSStorageGateway) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSStorageGateway/current/index.json"

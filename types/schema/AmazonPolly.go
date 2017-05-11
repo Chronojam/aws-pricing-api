@@ -4,33 +4,35 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonPolly struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonPolly_Product
-	Terms		map[string]map[string]AmazonPolly_Term
+	Terms		map[string]map[string]map[string]AmazonPolly_Term
 }
 type AmazonPolly_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AmazonPolly_Product_Attributes
 }
-type AmazonPolly_Product_Attributes struct {	Operation	string
-	Servicecode	string
-	Location	string
+type AmazonPolly_Product_Attributes struct {	Location	string
 	LocationType	string
 	Usagetype	string
+	Operation	string
+	Servicecode	string
 }
 
 type AmazonPolly_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonPolly_Term_PriceDimensions
+	PriceDimensions map[string]AmazonPolly_Term_PriceDimensions
 	TermAttributes AmazonPolly_Term_TermAttributes
 }
 
@@ -51,6 +53,28 @@ type AmazonPolly_Term_PricePerUnit struct {
 
 type AmazonPolly_Term_TermAttributes struct {
 
+}
+func (a AmazonPolly) QueryProducts(q func(product AmazonPolly_Product) bool) []AmazonPolly_Product{
+	ret := []AmazonPolly_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonPolly) QueryTerms(t string, q func(product AmazonPolly_Term) bool) []AmazonPolly_Term{
+	ret := []AmazonPolly_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonPolly) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonPolly/current/index.json"

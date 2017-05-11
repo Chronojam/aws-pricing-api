@@ -4,16 +4,18 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSCloudTrail struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSCloudTrail_Product
-	Terms		map[string]map[string]AWSCloudTrail_Term
+	Terms		map[string]map[string]map[string]AWSCloudTrail_Term
 }
 type AWSCloudTrail_Product struct {	Sku	string
 	ProductFamily	string
@@ -30,7 +32,7 @@ type AWSCloudTrail_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSCloudTrail_Term_PriceDimensions
+	PriceDimensions map[string]AWSCloudTrail_Term_PriceDimensions
 	TermAttributes AWSCloudTrail_Term_TermAttributes
 }
 
@@ -51,6 +53,28 @@ type AWSCloudTrail_Term_PricePerUnit struct {
 
 type AWSCloudTrail_Term_TermAttributes struct {
 
+}
+func (a AWSCloudTrail) QueryProducts(q func(product AWSCloudTrail_Product) bool) []AWSCloudTrail_Product{
+	ret := []AWSCloudTrail_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSCloudTrail) QueryTerms(t string, q func(product AWSCloudTrail_Term) bool) []AWSCloudTrail_Term{
+	ret := []AWSCloudTrail_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSCloudTrail) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSCloudTrail/current/index.json"

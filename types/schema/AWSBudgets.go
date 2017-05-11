@@ -4,34 +4,36 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSBudgets struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSBudgets_Product
-	Terms		map[string]map[string]AWSBudgets_Term
+	Terms		map[string]map[string]map[string]AWSBudgets_Term
 }
 type AWSBudgets_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AWSBudgets_Product_Attributes
 }
-type AWSBudgets_Product_Attributes struct {	Location	string
+type AWSBudgets_Product_Attributes struct {	Servicecode	string
+	Location	string
 	LocationType	string
 	GroupDescription	string
 	Usagetype	string
 	Operation	string
-	Servicecode	string
 }
 
 type AWSBudgets_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSBudgets_Term_PriceDimensions
+	PriceDimensions map[string]AWSBudgets_Term_PriceDimensions
 	TermAttributes AWSBudgets_Term_TermAttributes
 }
 
@@ -52,6 +54,28 @@ type AWSBudgets_Term_PricePerUnit struct {
 
 type AWSBudgets_Term_TermAttributes struct {
 
+}
+func (a AWSBudgets) QueryProducts(q func(product AWSBudgets_Product) bool) []AWSBudgets_Product{
+	ret := []AWSBudgets_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSBudgets) QueryTerms(t string, q func(product AWSBudgets_Term) bool) []AWSBudgets_Term{
+	ret := []AWSBudgets_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSBudgets) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSBudgets/current/index.json"

@@ -4,16 +4,18 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonCloudWatch struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonCloudWatch_Product
-	Terms		map[string]map[string]AmazonCloudWatch_Term
+	Terms		map[string]map[string]map[string]AmazonCloudWatch_Term
 }
 type AmazonCloudWatch_Product struct {	Sku	string
 	ProductFamily	string
@@ -32,7 +34,7 @@ type AmazonCloudWatch_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonCloudWatch_Term_PriceDimensions
+	PriceDimensions map[string]AmazonCloudWatch_Term_PriceDimensions
 	TermAttributes AmazonCloudWatch_Term_TermAttributes
 }
 
@@ -53,6 +55,28 @@ type AmazonCloudWatch_Term_PricePerUnit struct {
 
 type AmazonCloudWatch_Term_TermAttributes struct {
 
+}
+func (a AmazonCloudWatch) QueryProducts(q func(product AmazonCloudWatch_Product) bool) []AmazonCloudWatch_Product{
+	ret := []AmazonCloudWatch_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonCloudWatch) QueryTerms(t string, q func(product AmazonCloudWatch_Term) bool) []AmazonCloudWatch_Term{
+	ret := []AmazonCloudWatch_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonCloudWatch) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/index.json"

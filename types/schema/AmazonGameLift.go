@@ -4,36 +4,38 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonGameLift struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonGameLift_Product
-	Terms		map[string]map[string]AmazonGameLift_Term
+	Terms		map[string]map[string]map[string]AmazonGameLift_Term
 }
 type AmazonGameLift_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AmazonGameLift_Product_Attributes
 }
-type AmazonGameLift_Product_Attributes struct {	Servicecode	string
+type AmazonGameLift_Product_Attributes struct {	Usagetype	string
+	Operation	string
+	Servicecode	string
 	TransferType	string
 	FromLocation	string
 	FromLocationType	string
 	ToLocation	string
 	ToLocationType	string
-	Usagetype	string
-	Operation	string
 }
 
 type AmazonGameLift_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonGameLift_Term_PriceDimensions
+	PriceDimensions map[string]AmazonGameLift_Term_PriceDimensions
 	TermAttributes AmazonGameLift_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type AmazonGameLift_Term_PricePerUnit struct {
 
 type AmazonGameLift_Term_TermAttributes struct {
 
+}
+func (a AmazonGameLift) QueryProducts(q func(product AmazonGameLift_Product) bool) []AmazonGameLift_Product{
+	ret := []AmazonGameLift_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonGameLift) QueryTerms(t string, q func(product AmazonGameLift_Term) bool) []AmazonGameLift_Term{
+	ret := []AmazonGameLift_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonGameLift) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonGameLift/current/index.json"

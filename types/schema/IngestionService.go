@@ -4,16 +4,18 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type IngestionService struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]IngestionService_Product
-	Terms		map[string]map[string]IngestionService_Term
+	Terms		map[string]map[string]map[string]IngestionService_Term
 }
 type IngestionService_Product struct {	Sku	string
 	ProductFamily	string
@@ -33,7 +35,7 @@ type IngestionService_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions IngestionService_Term_PriceDimensions
+	PriceDimensions map[string]IngestionService_Term_PriceDimensions
 	TermAttributes IngestionService_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type IngestionService_Term_PricePerUnit struct {
 
 type IngestionService_Term_TermAttributes struct {
 
+}
+func (a IngestionService) QueryProducts(q func(product IngestionService_Product) bool) []IngestionService_Product{
+	ret := []IngestionService_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a IngestionService) QueryTerms(t string, q func(product IngestionService_Term) bool) []IngestionService_Term{
+	ret := []IngestionService_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *IngestionService) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/IngestionService/current/index.json"

@@ -4,36 +4,38 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonECR struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonECR_Product
-	Terms		map[string]map[string]AmazonECR_Term
+	Terms		map[string]map[string]map[string]AmazonECR_Term
 }
 type AmazonECR_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AmazonECR_Product_Attributes
 }
-type AmazonECR_Product_Attributes struct {	Servicecode	string
+type AmazonECR_Product_Attributes struct {	Operation	string
+	Servicecode	string
 	TransferType	string
 	FromLocation	string
 	FromLocationType	string
 	ToLocation	string
 	ToLocationType	string
 	Usagetype	string
-	Operation	string
 }
 
 type AmazonECR_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonECR_Term_PriceDimensions
+	PriceDimensions map[string]AmazonECR_Term_PriceDimensions
 	TermAttributes AmazonECR_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type AmazonECR_Term_PricePerUnit struct {
 
 type AmazonECR_Term_TermAttributes struct {
 
+}
+func (a AmazonECR) QueryProducts(q func(product AmazonECR_Product) bool) []AmazonECR_Product{
+	ret := []AmazonECR_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonECR) QueryTerms(t string, q func(product AmazonECR_Term) bool) []AmazonECR_Term{
+	ret := []AmazonECR_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonECR) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECR/current/index.json"

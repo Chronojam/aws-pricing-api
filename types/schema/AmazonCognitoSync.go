@@ -4,33 +4,35 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonCognitoSync struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonCognitoSync_Product
-	Terms		map[string]map[string]AmazonCognitoSync_Term
+	Terms		map[string]map[string]map[string]AmazonCognitoSync_Term
 }
-type AmazonCognitoSync_Product struct {	Sku	string
-	ProductFamily	string
+type AmazonCognitoSync_Product struct {	ProductFamily	string
 	Attributes	AmazonCognitoSync_Product_Attributes
+	Sku	string
 }
-type AmazonCognitoSync_Product_Attributes struct {	Servicecode	string
-	Location	string
-	LocationType	string
+type AmazonCognitoSync_Product_Attributes struct {	LocationType	string
 	Usagetype	string
 	Operation	string
+	Servicecode	string
+	Location	string
 }
 
 type AmazonCognitoSync_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonCognitoSync_Term_PriceDimensions
+	PriceDimensions map[string]AmazonCognitoSync_Term_PriceDimensions
 	TermAttributes AmazonCognitoSync_Term_TermAttributes
 }
 
@@ -51,6 +53,28 @@ type AmazonCognitoSync_Term_PricePerUnit struct {
 
 type AmazonCognitoSync_Term_TermAttributes struct {
 
+}
+func (a AmazonCognitoSync) QueryProducts(q func(product AmazonCognitoSync_Product) bool) []AmazonCognitoSync_Product{
+	ret := []AmazonCognitoSync_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonCognitoSync) QueryTerms(t string, q func(product AmazonCognitoSync_Term) bool) []AmazonCognitoSync_Term{
+	ret := []AmazonCognitoSync_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonCognitoSync) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCognitoSync/current/index.json"

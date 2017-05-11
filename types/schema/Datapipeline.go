@@ -4,37 +4,39 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type Datapipeline struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]Datapipeline_Product
-	Terms		map[string]map[string]Datapipeline_Term
+	Terms		map[string]map[string]map[string]Datapipeline_Term
 }
 type Datapipeline_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	Datapipeline_Product_Attributes
 }
-type Datapipeline_Product_Attributes struct {	Group	string
-	Usagetype	string
-	Operation	string
+type Datapipeline_Product_Attributes struct {	Operation	string
 	ExecutionFrequency	string
+	ExecutionLocation	string
 	FrequencyMode	string
 	Servicecode	string
-	LocationType	string
 	Location	string
-	ExecutionLocation	string
+	LocationType	string
+	Group	string
+	Usagetype	string
 }
 
 type Datapipeline_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions Datapipeline_Term_PriceDimensions
+	PriceDimensions map[string]Datapipeline_Term_PriceDimensions
 	TermAttributes Datapipeline_Term_TermAttributes
 }
 
@@ -55,6 +57,28 @@ type Datapipeline_Term_PricePerUnit struct {
 
 type Datapipeline_Term_TermAttributes struct {
 
+}
+func (a Datapipeline) QueryProducts(q func(product Datapipeline_Product) bool) []Datapipeline_Product{
+	ret := []Datapipeline_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a Datapipeline) QueryTerms(t string, q func(product Datapipeline_Term) bool) []Datapipeline_Term{
+	ret := []Datapipeline_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *Datapipeline) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/datapipeline/current/index.json"

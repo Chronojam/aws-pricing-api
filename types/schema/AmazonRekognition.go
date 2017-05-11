@@ -4,35 +4,37 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonRekognition struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonRekognition_Product
-	Terms		map[string]map[string]AmazonRekognition_Term
+	Terms		map[string]map[string]map[string]AmazonRekognition_Term
 }
-type AmazonRekognition_Product struct {	Sku	string
-	ProductFamily	string
+type AmazonRekognition_Product struct {	ProductFamily	string
 	Attributes	AmazonRekognition_Product_Attributes
+	Sku	string
 }
-type AmazonRekognition_Product_Attributes struct {	Operation	string
-	Servicecode	string
-	Location	string
-	LocationType	string
+type AmazonRekognition_Product_Attributes struct {	LocationType	string
 	Group	string
 	GroupDescription	string
 	Usagetype	string
+	Operation	string
+	Servicecode	string
+	Location	string
 }
 
 type AmazonRekognition_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonRekognition_Term_PriceDimensions
+	PriceDimensions map[string]AmazonRekognition_Term_PriceDimensions
 	TermAttributes AmazonRekognition_Term_TermAttributes
 }
 
@@ -53,6 +55,28 @@ type AmazonRekognition_Term_PricePerUnit struct {
 
 type AmazonRekognition_Term_TermAttributes struct {
 
+}
+func (a AmazonRekognition) QueryProducts(q func(product AmazonRekognition_Product) bool) []AmazonRekognition_Product{
+	ret := []AmazonRekognition_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonRekognition) QueryTerms(t string, q func(product AmazonRekognition_Term) bool) []AmazonRekognition_Term{
+	ret := []AmazonRekognition_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonRekognition) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRekognition/current/index.json"

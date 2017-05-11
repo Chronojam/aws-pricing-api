@@ -4,16 +4,18 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonVPC struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonVPC_Product
-	Terms		map[string]map[string]AmazonVPC_Term
+	Terms		map[string]map[string]map[string]AmazonVPC_Term
 }
 type AmazonVPC_Product struct {	Sku	string
 	ProductFamily	string
@@ -33,7 +35,7 @@ type AmazonVPC_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonVPC_Term_PriceDimensions
+	PriceDimensions map[string]AmazonVPC_Term_PriceDimensions
 	TermAttributes AmazonVPC_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type AmazonVPC_Term_PricePerUnit struct {
 
 type AmazonVPC_Term_TermAttributes struct {
 
+}
+func (a AmazonVPC) QueryProducts(q func(product AmazonVPC_Product) bool) []AmazonVPC_Product{
+	ret := []AmazonVPC_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonVPC) QueryTerms(t string, q func(product AmazonVPC_Term) bool) []AmazonVPC_Term{
+	ret := []AmazonVPC_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonVPC) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/current/index.json"

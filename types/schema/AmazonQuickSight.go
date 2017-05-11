@@ -4,37 +4,39 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonQuickSight struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonQuickSight_Product
-	Terms		map[string]map[string]AmazonQuickSight_Term
+	Terms		map[string]map[string]map[string]AmazonQuickSight_Term
 }
-type AmazonQuickSight_Product struct {	Sku	string
+type AmazonQuickSight_Product struct {	Attributes	AmazonQuickSight_Product_Attributes
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonQuickSight_Product_Attributes
 }
-type AmazonQuickSight_Product_Attributes struct {	Servicecode	string
-	GroupDescription	string
-	Operation	string
-	Edition	string
-	Location	string
-	LocationType	string
+type AmazonQuickSight_Product_Attributes struct {	LocationType	string
 	Group	string
 	Usagetype	string
+	Servicecode	string
+	Location	string
+	Edition	string
 	SubscriptionType	string
+	GroupDescription	string
+	Operation	string
 }
 
 type AmazonQuickSight_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonQuickSight_Term_PriceDimensions
+	PriceDimensions map[string]AmazonQuickSight_Term_PriceDimensions
 	TermAttributes AmazonQuickSight_Term_TermAttributes
 }
 
@@ -55,6 +57,28 @@ type AmazonQuickSight_Term_PricePerUnit struct {
 
 type AmazonQuickSight_Term_TermAttributes struct {
 
+}
+func (a AmazonQuickSight) QueryProducts(q func(product AmazonQuickSight_Product) bool) []AmazonQuickSight_Product{
+	ret := []AmazonQuickSight_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonQuickSight) QueryTerms(t string, q func(product AmazonQuickSight_Term) bool) []AmazonQuickSight_Term{
+	ret := []AmazonQuickSight_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonQuickSight) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonQuickSight/current/index.json"

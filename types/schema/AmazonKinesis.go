@@ -4,37 +4,39 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonKinesis struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonKinesis_Product
-	Terms		map[string]map[string]AmazonKinesis_Term
+	Terms		map[string]map[string]map[string]AmazonKinesis_Term
 }
-type AmazonKinesis_Product struct {	Sku	string
+type AmazonKinesis_Product struct {	Attributes	AmazonKinesis_Product_Attributes
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonKinesis_Product_Attributes
 }
-type AmazonKinesis_Product_Attributes struct {	StandardStorageRetentionIncluded	string
+type AmazonKinesis_Product_Attributes struct {	LocationType	string
+	StandardStorageRetentionIncluded	string
+	Operation	string
+	MaximumExtendedStorage	string
 	Servicecode	string
 	Location	string
-	LocationType	string
 	Group	string
 	GroupDescription	string
 	Usagetype	string
-	Operation	string
-	MaximumExtendedStorage	string
 }
 
 type AmazonKinesis_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonKinesis_Term_PriceDimensions
+	PriceDimensions map[string]AmazonKinesis_Term_PriceDimensions
 	TermAttributes AmazonKinesis_Term_TermAttributes
 }
 
@@ -55,6 +57,28 @@ type AmazonKinesis_Term_PricePerUnit struct {
 
 type AmazonKinesis_Term_TermAttributes struct {
 
+}
+func (a AmazonKinesis) QueryProducts(q func(product AmazonKinesis_Product) bool) []AmazonKinesis_Product{
+	ret := []AmazonKinesis_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonKinesis) QueryTerms(t string, q func(product AmazonKinesis_Term) bool) []AmazonKinesis_Term{
+	ret := []AmazonKinesis_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonKinesis) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonKinesis/current/index.json"

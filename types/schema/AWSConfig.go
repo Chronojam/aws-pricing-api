@@ -4,33 +4,35 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSConfig struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSConfig_Product
-	Terms		map[string]map[string]AWSConfig_Term
+	Terms		map[string]map[string]map[string]AWSConfig_Term
 }
 type AWSConfig_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AWSConfig_Product_Attributes
 }
-type AWSConfig_Product_Attributes struct {	Operation	string
+type AWSConfig_Product_Attributes struct {	Usagetype	string
+	Operation	string
 	Servicecode	string
 	Location	string
 	LocationType	string
-	Usagetype	string
 }
 
 type AWSConfig_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSConfig_Term_PriceDimensions
+	PriceDimensions map[string]AWSConfig_Term_PriceDimensions
 	TermAttributes AWSConfig_Term_TermAttributes
 }
 
@@ -51,6 +53,28 @@ type AWSConfig_Term_PricePerUnit struct {
 
 type AWSConfig_Term_TermAttributes struct {
 
+}
+func (a AWSConfig) QueryProducts(q func(product AWSConfig_Product) bool) []AWSConfig_Product{
+	ret := []AWSConfig_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSConfig) QueryTerms(t string, q func(product AWSConfig_Term) bool) []AWSConfig_Term{
+	ret := []AWSConfig_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSConfig) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSConfig/current/index.json"

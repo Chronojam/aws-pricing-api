@@ -4,34 +4,36 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSServiceCatalog struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSServiceCatalog_Product
-	Terms		map[string]map[string]AWSServiceCatalog_Term
+	Terms		map[string]map[string]map[string]AWSServiceCatalog_Term
 }
 type AWSServiceCatalog_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AWSServiceCatalog_Product_Attributes
 }
-type AWSServiceCatalog_Product_Attributes struct {	Servicecode	string
+type AWSServiceCatalog_Product_Attributes struct {	Operation	string
+	WithActiveUsers	string
+	Servicecode	string
 	Location	string
 	LocationType	string
 	Usagetype	string
-	Operation	string
-	WithActiveUsers	string
 }
 
 type AWSServiceCatalog_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSServiceCatalog_Term_PriceDimensions
+	PriceDimensions map[string]AWSServiceCatalog_Term_PriceDimensions
 	TermAttributes AWSServiceCatalog_Term_TermAttributes
 }
 
@@ -52,6 +54,28 @@ type AWSServiceCatalog_Term_PricePerUnit struct {
 
 type AWSServiceCatalog_Term_TermAttributes struct {
 
+}
+func (a AWSServiceCatalog) QueryProducts(q func(product AWSServiceCatalog_Product) bool) []AWSServiceCatalog_Product{
+	ret := []AWSServiceCatalog_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSServiceCatalog) QueryTerms(t string, q func(product AWSServiceCatalog_Term) bool) []AWSServiceCatalog_Term{
+	ret := []AWSServiceCatalog_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSServiceCatalog) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSServiceCatalog/current/index.json"

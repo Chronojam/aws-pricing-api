@@ -4,16 +4,18 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonDynamoDB struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonDynamoDB_Product
-	Terms		map[string]map[string]AmazonDynamoDB_Term
+	Terms		map[string]map[string]map[string]AmazonDynamoDB_Term
 }
 type AmazonDynamoDB_Product struct {	Sku	string
 	ProductFamily	string
@@ -33,7 +35,7 @@ type AmazonDynamoDB_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonDynamoDB_Term_PriceDimensions
+	PriceDimensions map[string]AmazonDynamoDB_Term_PriceDimensions
 	TermAttributes AmazonDynamoDB_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type AmazonDynamoDB_Term_PricePerUnit struct {
 
 type AmazonDynamoDB_Term_TermAttributes struct {
 
+}
+func (a AmazonDynamoDB) QueryProducts(q func(product AmazonDynamoDB_Product) bool) []AmazonDynamoDB_Product{
+	ret := []AmazonDynamoDB_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonDynamoDB) QueryTerms(t string, q func(product AmazonDynamoDB_Term) bool) []AmazonDynamoDB_Term{
+	ret := []AmazonDynamoDB_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonDynamoDB) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonDynamoDB/current/index.json"

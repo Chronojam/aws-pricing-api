@@ -4,36 +4,38 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSIoT struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSIoT_Product
-	Terms		map[string]map[string]AWSIoT_Term
+	Terms		map[string]map[string]map[string]AWSIoT_Term
 }
 type AWSIoT_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AWSIoT_Product_Attributes
 }
-type AWSIoT_Product_Attributes struct {	Location	string
+type AWSIoT_Product_Attributes struct {	Servicecode	string
+	Location	string
 	LocationType	string
 	Usagetype	string
 	Operation	string
 	Isshadow	string
 	Iswebsocket	string
 	Protocol	string
-	Servicecode	string
 }
 
 type AWSIoT_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSIoT_Term_PriceDimensions
+	PriceDimensions map[string]AWSIoT_Term_PriceDimensions
 	TermAttributes AWSIoT_Term_TermAttributes
 }
 
@@ -54,6 +56,28 @@ type AWSIoT_Term_PricePerUnit struct {
 
 type AWSIoT_Term_TermAttributes struct {
 
+}
+func (a AWSIoT) QueryProducts(q func(product AWSIoT_Product) bool) []AWSIoT_Product{
+	ret := []AWSIoT_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSIoT) QueryTerms(t string, q func(product AWSIoT_Term) bool) []AWSIoT_Term{
+	ret := []AWSIoT_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSIoT) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSIoT/current/index.json"

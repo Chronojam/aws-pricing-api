@@ -4,36 +4,35 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonCloudFront struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonCloudFront_Product
-	Terms		map[string]map[string]AmazonCloudFront_Term
+	Terms		map[string]map[string]map[string]AmazonCloudFront_Term
 }
 type AmazonCloudFront_Product struct {	Sku	string
 	ProductFamily	string
 	Attributes	AmazonCloudFront_Product_Attributes
 }
-type AmazonCloudFront_Product_Attributes struct {	TransferType	string
-	FromLocation	string
-	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
+type AmazonCloudFront_Product_Attributes struct {	Servicecode	string
+	Group	string
+	GroupDescription	string
 	Usagetype	string
 	Operation	string
-	Servicecode	string
 }
 
 type AmazonCloudFront_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonCloudFront_Term_PriceDimensions
+	PriceDimensions map[string]AmazonCloudFront_Term_PriceDimensions
 	TermAttributes AmazonCloudFront_Term_TermAttributes
 }
 
@@ -54,6 +53,28 @@ type AmazonCloudFront_Term_PricePerUnit struct {
 
 type AmazonCloudFront_Term_TermAttributes struct {
 
+}
+func (a AmazonCloudFront) QueryProducts(q func(product AmazonCloudFront_Product) bool) []AmazonCloudFront_Product{
+	ret := []AmazonCloudFront_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonCloudFront) QueryTerms(t string, q func(product AmazonCloudFront_Term) bool) []AmazonCloudFront_Term{
+	ret := []AmazonCloudFront_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonCloudFront) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json"

@@ -4,34 +4,36 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AWSCodeDeploy struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AWSCodeDeploy_Product
-	Terms		map[string]map[string]AWSCodeDeploy_Term
+	Terms		map[string]map[string]map[string]AWSCodeDeploy_Term
 }
-type AWSCodeDeploy_Product struct {	ProductFamily	string
+type AWSCodeDeploy_Product struct {	Sku	string
+	ProductFamily	string
 	Attributes	AWSCodeDeploy_Product_Attributes
-	Sku	string
 }
-type AWSCodeDeploy_Product_Attributes struct {	DeploymentLocation	string
-	Servicecode	string
-	Location	string
-	LocationType	string
+type AWSCodeDeploy_Product_Attributes struct {	LocationType	string
 	Usagetype	string
 	Operation	string
+	DeploymentLocation	string
+	Servicecode	string
+	Location	string
 }
 
 type AWSCodeDeploy_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AWSCodeDeploy_Term_PriceDimensions
+	PriceDimensions map[string]AWSCodeDeploy_Term_PriceDimensions
 	TermAttributes AWSCodeDeploy_Term_TermAttributes
 }
 
@@ -52,6 +54,28 @@ type AWSCodeDeploy_Term_PricePerUnit struct {
 
 type AWSCodeDeploy_Term_TermAttributes struct {
 
+}
+func (a AWSCodeDeploy) QueryProducts(q func(product AWSCodeDeploy_Product) bool) []AWSCodeDeploy_Product{
+	ret := []AWSCodeDeploy_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AWSCodeDeploy) QueryTerms(t string, q func(product AWSCodeDeploy_Term) bool) []AWSCodeDeploy_Term{
+	ret := []AWSCodeDeploy_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AWSCodeDeploy) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSCodeDeploy/current/index.json"

@@ -4,16 +4,18 @@ import (
 	"net/http"
 	"encoding/json"
 	"io/ioutil"
+	"github.com/jinzhu/gorm"
 )
 
 type AmazonRoute53 struct {
+	gorm.Model
 	FormatVersion	string
 	Disclaimer	string
 	OfferCode	string
 	Version		string
 	PublicationDate	string
 	Products	map[string]AmazonRoute53_Product
-	Terms		map[string]map[string]AmazonRoute53_Term
+	Terms		map[string]map[string]map[string]AmazonRoute53_Term
 }
 type AmazonRoute53_Product struct {	Sku	string
 	ProductFamily	string
@@ -30,7 +32,7 @@ type AmazonRoute53_Term struct {
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions AmazonRoute53_Term_PriceDimensions
+	PriceDimensions map[string]AmazonRoute53_Term_PriceDimensions
 	TermAttributes AmazonRoute53_Term_TermAttributes
 }
 
@@ -51,6 +53,28 @@ type AmazonRoute53_Term_PricePerUnit struct {
 
 type AmazonRoute53_Term_TermAttributes struct {
 
+}
+func (a AmazonRoute53) QueryProducts(q func(product AmazonRoute53_Product) bool) []AmazonRoute53_Product{
+	ret := []AmazonRoute53_Product{}
+	for _, v := range a.Products {
+		if q(v) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+func (a AmazonRoute53) QueryTerms(t string, q func(product AmazonRoute53_Term) bool) []AmazonRoute53_Term{
+	ret := []AmazonRoute53_Term{}
+	for _, v := range a.Terms[t] {
+		for _, val := range v {
+			if q(val) {
+				ret = append(ret, val)
+			}
+		}
+	}
+
+	return ret
 }
 func (a *AmazonRoute53) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRoute53/current/index.json"
