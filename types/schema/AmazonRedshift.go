@@ -28,17 +28,17 @@ type rawAmazonRedshift_Term struct {
 
 func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
 	var p rawAmazonRedshift
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonRedshift_Product{}
-	terms := []AmazonRedshift_Term{}
+	products := []*AmazonRedshift_Product{}
+	terms := []*AmazonRedshift_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonRedshift_Term_PriceDimensions{}
-				tAttributes := []AmazonRedshift_Term_Attributes{}
+				pDimensions := []*AmazonRedshift_Term_PriceDimensions{}
+				tAttributes := []*AmazonRedshift_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonRedshift_Term{
@@ -69,7 +69,7 @@ func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AmazonRedshift struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonRedshift_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonRedshift_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonRedshift_Product `gorm:"ForeignKey:AmazonRedshiftID"`
+	Terms		[]*AmazonRedshift_Term`gorm:"ForeignKey:AmazonRedshiftID"`
 }
 type AmazonRedshift_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonRedshiftID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonRedshift_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonRedshift_Product_Attributes	`gorm:"ForeignKey:AmazonRedshift_Product_AttributesID"`
 }
 type AmazonRedshift_Product_Attributes struct {
 	gorm.Model
-		FromLocation	string
+		AmazonRedshift_Product_AttributesID	uint
+	Servicecode	string
+	TransferType	string
+	FromLocation	string
 	FromLocationType	string
 	ToLocation	string
 	ToLocationType	string
 	Usagetype	string
 	Operation	string
-	Servicecode	string
-	TransferType	string
 }
 
 type AmazonRedshift_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonRedshiftID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonRedshift_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonRedshift_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonRedshift_Term_PriceDimensions `gorm:"ForeignKey:AmazonRedshift_TermID"`
+	TermAttributes []*AmazonRedshift_Term_Attributes `gorm:"ForeignKey:AmazonRedshift_TermID"`
 }
 
 type AmazonRedshift_Term_Attributes struct {
 	gorm.Model
+	AmazonRedshift_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonRedshift_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonRedshift_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonRedshift_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonRedshift_Term_PricePerUnit `gorm:"ForeignKey:AmazonRedshift_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonRedshift_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonRedshift_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonRedshift) QueryProducts(q func(product AmazonRedshift_Product) bool) []AmazonRedshift_Product{
-	ret := []AmazonRedshift_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonRedshift) QueryTerms(t string, q func(product AmazonRedshift_Term) bool) []AmazonRedshift_Term{
-	ret := []AmazonRedshift_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonRedshift) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRedshift/current/index.json"

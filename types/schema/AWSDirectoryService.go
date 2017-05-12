@@ -28,17 +28,17 @@ type rawAWSDirectoryService_Term struct {
 
 func (l *AWSDirectoryService) UnmarshalJSON(data []byte) error {
 	var p rawAWSDirectoryService
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSDirectoryService_Product{}
-	terms := []AWSDirectoryService_Term{}
+	products := []*AWSDirectoryService_Product{}
+	terms := []*AWSDirectoryService_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSDirectoryService) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSDirectoryService_Term_PriceDimensions{}
-				tAttributes := []AWSDirectoryService_Term_Attributes{}
+				pDimensions := []*AWSDirectoryService_Term_PriceDimensions{}
+				tAttributes := []*AWSDirectoryService_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSDirectoryService) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSDirectoryService_Term{
@@ -69,7 +69,7 @@ func (l *AWSDirectoryService) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AWSDirectoryService struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSDirectoryService_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSDirectoryService_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSDirectoryService_Product `gorm:"ForeignKey:AWSDirectoryServiceID"`
+	Terms		[]*AWSDirectoryService_Term`gorm:"ForeignKey:AWSDirectoryServiceID"`
 }
 type AWSDirectoryService_Product struct {
 	gorm.Model
-		ProductFamily	string
-	Attributes	AWSDirectoryService_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AWSDirectoryServiceID	uint
 	Sku	string
+	ProductFamily	string
+	Attributes	AWSDirectoryService_Product_Attributes	`gorm:"ForeignKey:AWSDirectoryService_Product_AttributesID"`
 }
 type AWSDirectoryService_Product_Attributes struct {
 	gorm.Model
-		LocationType	string
+		AWSDirectoryService_Product_AttributesID	uint
+	Location	string
+	LocationType	string
 	Usagetype	string
 	Operation	string
 	DirectorySize	string
 	DirectoryType	string
 	DirectoryTypeDescription	string
 	Servicecode	string
-	Location	string
 }
 
 type AWSDirectoryService_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSDirectoryServiceID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSDirectoryService_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSDirectoryService_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSDirectoryService_Term_PriceDimensions `gorm:"ForeignKey:AWSDirectoryService_TermID"`
+	TermAttributes []*AWSDirectoryService_Term_Attributes `gorm:"ForeignKey:AWSDirectoryService_TermID"`
 }
 
 type AWSDirectoryService_Term_Attributes struct {
 	gorm.Model
+	AWSDirectoryService_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSDirectoryService_Term_PriceDimensions struct {
 	gorm.Model
+	AWSDirectoryService_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSDirectoryService_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSDirectoryService_Term_PricePerUnit `gorm:"ForeignKey:AWSDirectoryService_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSDirectoryService_Term_PricePerUnit struct {
 	gorm.Model
+	AWSDirectoryService_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSDirectoryService) QueryProducts(q func(product AWSDirectoryService_Product) bool) []AWSDirectoryService_Product{
-	ret := []AWSDirectoryService_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSDirectoryService) QueryTerms(t string, q func(product AWSDirectoryService_Term) bool) []AWSDirectoryService_Term{
-	ret := []AWSDirectoryService_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSDirectoryService) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSDirectoryService/current/index.json"

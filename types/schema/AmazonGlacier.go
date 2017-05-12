@@ -28,17 +28,17 @@ type rawAmazonGlacier_Term struct {
 
 func (l *AmazonGlacier) UnmarshalJSON(data []byte) error {
 	var p rawAmazonGlacier
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonGlacier_Product{}
-	terms := []AmazonGlacier_Term{}
+	products := []*AmazonGlacier_Product{}
+	terms := []*AmazonGlacier_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonGlacier) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonGlacier_Term_PriceDimensions{}
-				tAttributes := []AmazonGlacier_Term_Attributes{}
+				pDimensions := []*AmazonGlacier_Term_PriceDimensions{}
+				tAttributes := []*AmazonGlacier_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonGlacier) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonGlacier_Term{
@@ -69,7 +69,7 @@ func (l *AmazonGlacier) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,18 +91,19 @@ type AmazonGlacier struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonGlacier_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonGlacier_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonGlacier_Product `gorm:"ForeignKey:AmazonGlacierID"`
+	Terms		[]*AmazonGlacier_Term`gorm:"ForeignKey:AmazonGlacierID"`
 }
 type AmazonGlacier_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonGlacierID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonGlacier_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonGlacier_Product_Attributes	`gorm:"ForeignKey:AmazonGlacier_Product_AttributesID"`
 }
 type AmazonGlacier_Product_Attributes struct {
 	gorm.Model
-		Operation	string
+		AmazonGlacier_Product_AttributesID	uint
 	Servicecode	string
 	TransferType	string
 	FromLocation	string
@@ -110,58 +111,43 @@ type AmazonGlacier_Product_Attributes struct {
 	ToLocation	string
 	ToLocationType	string
 	Usagetype	string
+	Operation	string
 }
 
 type AmazonGlacier_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonGlacierID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonGlacier_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonGlacier_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonGlacier_Term_PriceDimensions `gorm:"ForeignKey:AmazonGlacier_TermID"`
+	TermAttributes []*AmazonGlacier_Term_Attributes `gorm:"ForeignKey:AmazonGlacier_TermID"`
 }
 
 type AmazonGlacier_Term_Attributes struct {
 	gorm.Model
+	AmazonGlacier_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonGlacier_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonGlacier_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonGlacier_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonGlacier_Term_PricePerUnit `gorm:"ForeignKey:AmazonGlacier_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonGlacier_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonGlacier_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonGlacier) QueryProducts(q func(product AmazonGlacier_Product) bool) []AmazonGlacier_Product{
-	ret := []AmazonGlacier_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonGlacier) QueryTerms(t string, q func(product AmazonGlacier_Term) bool) []AmazonGlacier_Term{
-	ret := []AmazonGlacier_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonGlacier) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonGlacier/current/index.json"

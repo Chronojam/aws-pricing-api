@@ -28,17 +28,17 @@ type rawOpsWorks_Term struct {
 
 func (l *OpsWorks) UnmarshalJSON(data []byte) error {
 	var p rawOpsWorks
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []OpsWorks_Product{}
-	terms := []OpsWorks_Term{}
+	products := []*OpsWorks_Product{}
+	terms := []*OpsWorks_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *OpsWorks) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []OpsWorks_Term_PriceDimensions{}
-				tAttributes := []OpsWorks_Term_Attributes{}
+				pDimensions := []*OpsWorks_Term_PriceDimensions{}
+				tAttributes := []*OpsWorks_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *OpsWorks) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := OpsWorks_Term{
@@ -69,7 +69,7 @@ func (l *OpsWorks) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,76 +91,62 @@ type OpsWorks struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]OpsWorks_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]OpsWorks_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*OpsWorks_Product `gorm:"ForeignKey:OpsWorksID"`
+	Terms		[]*OpsWorks_Term`gorm:"ForeignKey:OpsWorksID"`
 }
 type OpsWorks_Product struct {
 	gorm.Model
-		Sku	string
+		OpsWorksID	uint
 	ProductFamily	string
-	Attributes	OpsWorks_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	OpsWorks_Product_Attributes	`gorm:"ForeignKey:OpsWorks_Product_AttributesID"`
+	Sku	string
 }
 type OpsWorks_Product_Attributes struct {
 	gorm.Model
-		ServerLocation	string
-	Servicecode	string
-	Location	string
+		OpsWorks_Product_AttributesID	uint
 	LocationType	string
 	Group	string
 	Usagetype	string
 	Operation	string
+	ServerLocation	string
+	Servicecode	string
+	Location	string
 }
 
 type OpsWorks_Term struct {
 	gorm.Model
 	OfferTermCode string
+	OpsWorksID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []OpsWorks_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []OpsWorks_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*OpsWorks_Term_PriceDimensions `gorm:"ForeignKey:OpsWorks_TermID"`
+	TermAttributes []*OpsWorks_Term_Attributes `gorm:"ForeignKey:OpsWorks_TermID"`
 }
 
 type OpsWorks_Term_Attributes struct {
 	gorm.Model
+	OpsWorks_TermID	uint
 	Key	string
 	Value	string
 }
 
 type OpsWorks_Term_PriceDimensions struct {
 	gorm.Model
+	OpsWorks_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	OpsWorks_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*OpsWorks_Term_PricePerUnit `gorm:"ForeignKey:OpsWorks_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type OpsWorks_Term_PricePerUnit struct {
 	gorm.Model
+	OpsWorks_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a OpsWorks) QueryProducts(q func(product OpsWorks_Product) bool) []OpsWorks_Product{
-	ret := []OpsWorks_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a OpsWorks) QueryTerms(t string, q func(product OpsWorks_Term) bool) []OpsWorks_Term{
-	ret := []OpsWorks_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *OpsWorks) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/OpsWorks/current/index.json"

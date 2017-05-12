@@ -28,17 +28,17 @@ type rawAWSLambda_Term struct {
 
 func (l *AWSLambda) UnmarshalJSON(data []byte) error {
 	var p rawAWSLambda
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSLambda_Product{}
-	terms := []AWSLambda_Term{}
+	products := []*AWSLambda_Product{}
+	terms := []*AWSLambda_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSLambda) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSLambda_Term_PriceDimensions{}
-				tAttributes := []AWSLambda_Term_Attributes{}
+				pDimensions := []*AWSLambda_Term_PriceDimensions{}
+				tAttributes := []*AWSLambda_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSLambda) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSLambda_Term{
@@ -69,7 +69,7 @@ func (l *AWSLambda) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AWSLambda struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSLambda_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSLambda_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSLambda_Product `gorm:"ForeignKey:AWSLambdaID"`
+	Terms		[]*AWSLambda_Term`gorm:"ForeignKey:AWSLambdaID"`
 }
 type AWSLambda_Product struct {
 	gorm.Model
-		Attributes	AWSLambda_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AWSLambdaID	uint
 	Sku	string
 	ProductFamily	string
+	Attributes	AWSLambda_Product_Attributes	`gorm:"ForeignKey:AWSLambda_Product_AttributesID"`
 }
 type AWSLambda_Product_Attributes struct {
 	gorm.Model
-		FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
+		AWSLambda_Product_AttributesID	uint
 	Usagetype	string
 	Operation	string
 	Servicecode	string
 	TransferType	string
 	FromLocation	string
+	FromLocationType	string
+	ToLocation	string
+	ToLocationType	string
 }
 
 type AWSLambda_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSLambdaID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSLambda_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSLambda_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSLambda_Term_PriceDimensions `gorm:"ForeignKey:AWSLambda_TermID"`
+	TermAttributes []*AWSLambda_Term_Attributes `gorm:"ForeignKey:AWSLambda_TermID"`
 }
 
 type AWSLambda_Term_Attributes struct {
 	gorm.Model
+	AWSLambda_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSLambda_Term_PriceDimensions struct {
 	gorm.Model
+	AWSLambda_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSLambda_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSLambda_Term_PricePerUnit `gorm:"ForeignKey:AWSLambda_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSLambda_Term_PricePerUnit struct {
 	gorm.Model
+	AWSLambda_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSLambda) QueryProducts(q func(product AWSLambda_Product) bool) []AWSLambda_Product{
-	ret := []AWSLambda_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSLambda) QueryTerms(t string, q func(product AWSLambda_Term) bool) []AWSLambda_Term{
-	ret := []AWSLambda_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSLambda) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSLambda/current/index.json"

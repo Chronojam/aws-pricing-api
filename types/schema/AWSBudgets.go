@@ -28,17 +28,17 @@ type rawAWSBudgets_Term struct {
 
 func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
 	var p rawAWSBudgets
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSBudgets_Product{}
-	terms := []AWSBudgets_Term{}
+	products := []*AWSBudgets_Product{}
+	terms := []*AWSBudgets_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSBudgets_Term_PriceDimensions{}
-				tAttributes := []AWSBudgets_Term_Attributes{}
+				pDimensions := []*AWSBudgets_Term_PriceDimensions{}
+				tAttributes := []*AWSBudgets_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSBudgets_Term{
@@ -69,7 +69,7 @@ func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,75 +91,61 @@ type AWSBudgets struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSBudgets_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSBudgets_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSBudgets_Product `gorm:"ForeignKey:AWSBudgetsID"`
+	Terms		[]*AWSBudgets_Term`gorm:"ForeignKey:AWSBudgetsID"`
 }
 type AWSBudgets_Product struct {
 	gorm.Model
-		Sku	string
+		AWSBudgetsID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AWSBudgets_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AWSBudgets_Product_Attributes	`gorm:"ForeignKey:AWSBudgets_Product_AttributesID"`
 }
 type AWSBudgets_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
-	Location	string
-	LocationType	string
+		AWSBudgets_Product_AttributesID	uint
 	GroupDescription	string
 	Usagetype	string
 	Operation	string
+	Servicecode	string
+	Location	string
+	LocationType	string
 }
 
 type AWSBudgets_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSBudgetsID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSBudgets_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSBudgets_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSBudgets_Term_PriceDimensions `gorm:"ForeignKey:AWSBudgets_TermID"`
+	TermAttributes []*AWSBudgets_Term_Attributes `gorm:"ForeignKey:AWSBudgets_TermID"`
 }
 
 type AWSBudgets_Term_Attributes struct {
 	gorm.Model
+	AWSBudgets_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSBudgets_Term_PriceDimensions struct {
 	gorm.Model
+	AWSBudgets_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSBudgets_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSBudgets_Term_PricePerUnit `gorm:"ForeignKey:AWSBudgets_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSBudgets_Term_PricePerUnit struct {
 	gorm.Model
+	AWSBudgets_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSBudgets) QueryProducts(q func(product AWSBudgets_Product) bool) []AWSBudgets_Product{
-	ret := []AWSBudgets_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSBudgets) QueryTerms(t string, q func(product AWSBudgets_Term) bool) []AWSBudgets_Term{
-	ret := []AWSBudgets_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSBudgets) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSBudgets/current/index.json"

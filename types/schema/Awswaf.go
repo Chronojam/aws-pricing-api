@@ -28,17 +28,17 @@ type rawAwswaf_Term struct {
 
 func (l *Awswaf) UnmarshalJSON(data []byte) error {
 	var p rawAwswaf
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []Awswaf_Product{}
-	terms := []Awswaf_Term{}
+	products := []*Awswaf_Product{}
+	terms := []*Awswaf_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *Awswaf) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []Awswaf_Term_PriceDimensions{}
-				tAttributes := []Awswaf_Term_Attributes{}
+				pDimensions := []*Awswaf_Term_PriceDimensions{}
+				tAttributes := []*Awswaf_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *Awswaf) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := Awswaf_Term{
@@ -69,7 +69,7 @@ func (l *Awswaf) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,76 +91,62 @@ type Awswaf struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]Awswaf_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]Awswaf_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*Awswaf_Product `gorm:"ForeignKey:AwswafID"`
+	Terms		[]*Awswaf_Term`gorm:"ForeignKey:AwswafID"`
 }
 type Awswaf_Product struct {
 	gorm.Model
-		Attributes	Awswaf_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AwswafID	uint
 	Sku	string
 	ProductFamily	string
+	Attributes	Awswaf_Product_Attributes	`gorm:"ForeignKey:Awswaf_Product_AttributesID"`
 }
 type Awswaf_Product_Attributes struct {
 	gorm.Model
-		Group	string
-	GroupDescription	string
-	Usagetype	string
-	Operation	string
+		Awswaf_Product_AttributesID	uint
 	Servicecode	string
 	Location	string
 	LocationType	string
+	Group	string
+	GroupDescription	string
+	Usagetype	string
+	Operation	string
 }
 
 type Awswaf_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AwswafID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []Awswaf_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []Awswaf_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*Awswaf_Term_PriceDimensions `gorm:"ForeignKey:Awswaf_TermID"`
+	TermAttributes []*Awswaf_Term_Attributes `gorm:"ForeignKey:Awswaf_TermID"`
 }
 
 type Awswaf_Term_Attributes struct {
 	gorm.Model
+	Awswaf_TermID	uint
 	Key	string
 	Value	string
 }
 
 type Awswaf_Term_PriceDimensions struct {
 	gorm.Model
+	Awswaf_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	Awswaf_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*Awswaf_Term_PricePerUnit `gorm:"ForeignKey:Awswaf_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type Awswaf_Term_PricePerUnit struct {
 	gorm.Model
+	Awswaf_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a Awswaf) QueryProducts(q func(product Awswaf_Product) bool) []Awswaf_Product{
-	ret := []Awswaf_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a Awswaf) QueryTerms(t string, q func(product Awswaf_Term) bool) []Awswaf_Term{
-	ret := []Awswaf_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *Awswaf) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awswaf/current/index.json"

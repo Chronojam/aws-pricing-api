@@ -28,17 +28,17 @@ type rawAmazonRoute53_Term struct {
 
 func (l *AmazonRoute53) UnmarshalJSON(data []byte) error {
 	var p rawAmazonRoute53
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonRoute53_Product{}
-	terms := []AmazonRoute53_Term{}
+	products := []*AmazonRoute53_Product{}
+	terms := []*AmazonRoute53_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonRoute53) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonRoute53_Term_PriceDimensions{}
-				tAttributes := []AmazonRoute53_Term_Attributes{}
+				pDimensions := []*AmazonRoute53_Term_PriceDimensions{}
+				tAttributes := []*AmazonRoute53_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonRoute53) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonRoute53_Term{
@@ -69,7 +69,7 @@ func (l *AmazonRoute53) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,19 +91,22 @@ type AmazonRoute53 struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonRoute53_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonRoute53_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonRoute53_Product `gorm:"ForeignKey:AmazonRoute53ID"`
+	Terms		[]*AmazonRoute53_Term`gorm:"ForeignKey:AmazonRoute53ID"`
 }
 type AmazonRoute53_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonRoute53ID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonRoute53_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonRoute53_Product_Attributes	`gorm:"ForeignKey:AmazonRoute53_Product_AttributesID"`
 }
 type AmazonRoute53_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
-	Description	string
+		AmazonRoute53_Product_AttributesID	uint
+	Servicecode	string
+	RoutingType	string
+	RoutingTarget	string
 	Usagetype	string
 	Operation	string
 }
@@ -111,53 +114,37 @@ type AmazonRoute53_Product_Attributes struct {
 type AmazonRoute53_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonRoute53ID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonRoute53_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonRoute53_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonRoute53_Term_PriceDimensions `gorm:"ForeignKey:AmazonRoute53_TermID"`
+	TermAttributes []*AmazonRoute53_Term_Attributes `gorm:"ForeignKey:AmazonRoute53_TermID"`
 }
 
 type AmazonRoute53_Term_Attributes struct {
 	gorm.Model
+	AmazonRoute53_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonRoute53_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonRoute53_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonRoute53_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonRoute53_Term_PricePerUnit `gorm:"ForeignKey:AmazonRoute53_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonRoute53_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonRoute53_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonRoute53) QueryProducts(q func(product AmazonRoute53_Product) bool) []AmazonRoute53_Product{
-	ret := []AmazonRoute53_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonRoute53) QueryTerms(t string, q func(product AmazonRoute53_Term) bool) []AmazonRoute53_Term{
-	ret := []AmazonRoute53_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonRoute53) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRoute53/current/index.json"

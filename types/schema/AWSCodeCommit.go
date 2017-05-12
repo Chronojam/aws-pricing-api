@@ -28,17 +28,17 @@ type rawAWSCodeCommit_Term struct {
 
 func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
 	var p rawAWSCodeCommit
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSCodeCommit_Product{}
-	terms := []AWSCodeCommit_Term{}
+	products := []*AWSCodeCommit_Product{}
+	terms := []*AWSCodeCommit_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSCodeCommit_Term_PriceDimensions{}
-				tAttributes := []AWSCodeCommit_Term_Attributes{}
+				pDimensions := []*AWSCodeCommit_Term_PriceDimensions{}
+				tAttributes := []*AWSCodeCommit_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSCodeCommit_Term{
@@ -69,7 +69,7 @@ func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,18 +91,20 @@ type AWSCodeCommit struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSCodeCommit_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSCodeCommit_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSCodeCommit_Product `gorm:"ForeignKey:AWSCodeCommitID"`
+	Terms		[]*AWSCodeCommit_Term`gorm:"ForeignKey:AWSCodeCommitID"`
 }
 type AWSCodeCommit_Product struct {
 	gorm.Model
-		Sku	string
+		AWSCodeCommitID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AWSCodeCommit_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AWSCodeCommit_Product_Attributes	`gorm:"ForeignKey:AWSCodeCommit_Product_AttributesID"`
 }
 type AWSCodeCommit_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
+		AWSCodeCommit_Product_AttributesID	uint
+	Servicecode	string
 	Location	string
 	LocationType	string
 	Group	string
@@ -113,53 +115,37 @@ type AWSCodeCommit_Product_Attributes struct {
 type AWSCodeCommit_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSCodeCommitID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSCodeCommit_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSCodeCommit_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSCodeCommit_Term_PriceDimensions `gorm:"ForeignKey:AWSCodeCommit_TermID"`
+	TermAttributes []*AWSCodeCommit_Term_Attributes `gorm:"ForeignKey:AWSCodeCommit_TermID"`
 }
 
 type AWSCodeCommit_Term_Attributes struct {
 	gorm.Model
+	AWSCodeCommit_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSCodeCommit_Term_PriceDimensions struct {
 	gorm.Model
+	AWSCodeCommit_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSCodeCommit_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSCodeCommit_Term_PricePerUnit `gorm:"ForeignKey:AWSCodeCommit_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSCodeCommit_Term_PricePerUnit struct {
 	gorm.Model
+	AWSCodeCommit_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSCodeCommit) QueryProducts(q func(product AWSCodeCommit_Product) bool) []AWSCodeCommit_Product{
-	ret := []AWSCodeCommit_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSCodeCommit) QueryTerms(t string, q func(product AWSCodeCommit_Term) bool) []AWSCodeCommit_Term{
-	ret := []AWSCodeCommit_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSCodeCommit) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSCodeCommit/current/index.json"

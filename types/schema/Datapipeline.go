@@ -28,17 +28,17 @@ type rawDatapipeline_Term struct {
 
 func (l *Datapipeline) UnmarshalJSON(data []byte) error {
 	var p rawDatapipeline
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []Datapipeline_Product{}
-	terms := []Datapipeline_Term{}
+	products := []*Datapipeline_Product{}
+	terms := []*Datapipeline_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *Datapipeline) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []Datapipeline_Term_PriceDimensions{}
-				tAttributes := []Datapipeline_Term_Attributes{}
+				pDimensions := []*Datapipeline_Term_PriceDimensions{}
+				tAttributes := []*Datapipeline_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *Datapipeline) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := Datapipeline_Term{
@@ -69,7 +69,7 @@ func (l *Datapipeline) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,78 +91,64 @@ type Datapipeline struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]Datapipeline_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]Datapipeline_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*Datapipeline_Product `gorm:"ForeignKey:DatapipelineID"`
+	Terms		[]*Datapipeline_Term`gorm:"ForeignKey:DatapipelineID"`
 }
 type Datapipeline_Product struct {
 	gorm.Model
-		Sku	string
+		DatapipelineID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	Datapipeline_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	Datapipeline_Product_Attributes	`gorm:"ForeignKey:Datapipeline_Product_AttributesID"`
 }
 type Datapipeline_Product_Attributes struct {
 	gorm.Model
-		Usagetype	string
-	Operation	string
-	ExecutionLocation	string
+		Datapipeline_Product_AttributesID	uint
+	Location	string
+	Usagetype	string
+	ExecutionFrequency	string
 	Servicecode	string
 	LocationType	string
-	ExecutionFrequency	string
-	FrequencyMode	string
-	Location	string
 	Group	string
+	Operation	string
+	ExecutionLocation	string
+	FrequencyMode	string
 }
 
 type Datapipeline_Term struct {
 	gorm.Model
 	OfferTermCode string
+	DatapipelineID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []Datapipeline_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []Datapipeline_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*Datapipeline_Term_PriceDimensions `gorm:"ForeignKey:Datapipeline_TermID"`
+	TermAttributes []*Datapipeline_Term_Attributes `gorm:"ForeignKey:Datapipeline_TermID"`
 }
 
 type Datapipeline_Term_Attributes struct {
 	gorm.Model
+	Datapipeline_TermID	uint
 	Key	string
 	Value	string
 }
 
 type Datapipeline_Term_PriceDimensions struct {
 	gorm.Model
+	Datapipeline_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	Datapipeline_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*Datapipeline_Term_PricePerUnit `gorm:"ForeignKey:Datapipeline_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type Datapipeline_Term_PricePerUnit struct {
 	gorm.Model
+	Datapipeline_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a Datapipeline) QueryProducts(q func(product Datapipeline_Product) bool) []Datapipeline_Product{
-	ret := []Datapipeline_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a Datapipeline) QueryTerms(t string, q func(product Datapipeline_Term) bool) []Datapipeline_Term{
-	ret := []Datapipeline_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *Datapipeline) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/datapipeline/current/index.json"

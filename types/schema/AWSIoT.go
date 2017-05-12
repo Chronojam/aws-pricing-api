@@ -28,17 +28,17 @@ type rawAWSIoT_Term struct {
 
 func (l *AWSIoT) UnmarshalJSON(data []byte) error {
 	var p rawAWSIoT
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSIoT_Product{}
-	terms := []AWSIoT_Term{}
+	products := []*AWSIoT_Product{}
+	terms := []*AWSIoT_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSIoT) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSIoT_Term_PriceDimensions{}
-				tAttributes := []AWSIoT_Term_Attributes{}
+				pDimensions := []*AWSIoT_Term_PriceDimensions{}
+				tAttributes := []*AWSIoT_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSIoT) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSIoT_Term{
@@ -69,7 +69,7 @@ func (l *AWSIoT) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AWSIoT struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSIoT_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSIoT_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSIoT_Product `gorm:"ForeignKey:AWSIoTID"`
+	Terms		[]*AWSIoT_Term`gorm:"ForeignKey:AWSIoTID"`
 }
 type AWSIoT_Product struct {
 	gorm.Model
-		Sku	string
+		AWSIoTID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AWSIoT_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AWSIoT_Product_Attributes	`gorm:"ForeignKey:AWSIoT_Product_AttributesID"`
 }
 type AWSIoT_Product_Attributes struct {
 	gorm.Model
-		Iswebsocket	string
-	Protocol	string
-	Servicecode	string
+		AWSIoT_Product_AttributesID	uint
 	Location	string
 	LocationType	string
 	Usagetype	string
 	Operation	string
 	Isshadow	string
+	Iswebsocket	string
+	Protocol	string
+	Servicecode	string
 }
 
 type AWSIoT_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSIoTID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSIoT_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSIoT_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSIoT_Term_PriceDimensions `gorm:"ForeignKey:AWSIoT_TermID"`
+	TermAttributes []*AWSIoT_Term_Attributes `gorm:"ForeignKey:AWSIoT_TermID"`
 }
 
 type AWSIoT_Term_Attributes struct {
 	gorm.Model
+	AWSIoT_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSIoT_Term_PriceDimensions struct {
 	gorm.Model
+	AWSIoT_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSIoT_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSIoT_Term_PricePerUnit `gorm:"ForeignKey:AWSIoT_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSIoT_Term_PricePerUnit struct {
 	gorm.Model
+	AWSIoT_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSIoT) QueryProducts(q func(product AWSIoT_Product) bool) []AWSIoT_Product{
-	ret := []AWSIoT_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSIoT) QueryTerms(t string, q func(product AWSIoT_Term) bool) []AWSIoT_Term{
-	ret := []AWSIoT_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSIoT) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSIoT/current/index.json"

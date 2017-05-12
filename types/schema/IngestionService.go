@@ -28,17 +28,17 @@ type rawIngestionService_Term struct {
 
 func (l *IngestionService) UnmarshalJSON(data []byte) error {
 	var p rawIngestionService
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []IngestionService_Product{}
-	terms := []IngestionService_Term{}
+	products := []*IngestionService_Product{}
+	terms := []*IngestionService_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *IngestionService) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []IngestionService_Term_PriceDimensions{}
-				tAttributes := []IngestionService_Term_Attributes{}
+				pDimensions := []*IngestionService_Term_PriceDimensions{}
+				tAttributes := []*IngestionService_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *IngestionService) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := IngestionService_Term{
@@ -69,7 +69,7 @@ func (l *IngestionService) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type IngestionService struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]IngestionService_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]IngestionService_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*IngestionService_Product `gorm:"ForeignKey:IngestionServiceID"`
+	Terms		[]*IngestionService_Term`gorm:"ForeignKey:IngestionServiceID"`
 }
 type IngestionService_Product struct {
 	gorm.Model
-		Attributes	IngestionService_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		IngestionServiceID	uint
 	Sku	string
 	ProductFamily	string
+	Attributes	IngestionService_Product_Attributes	`gorm:"ForeignKey:IngestionService_Product_AttributesID"`
 }
 type IngestionService_Product_Attributes struct {
 	gorm.Model
-		Group	string
-	GroupDescription	string
-	Usagetype	string
-	Operation	string
+		IngestionService_Product_AttributesID	uint
 	DataAction	string
 	Servicecode	string
 	Location	string
 	LocationType	string
+	Group	string
+	GroupDescription	string
+	Usagetype	string
+	Operation	string
 }
 
 type IngestionService_Term struct {
 	gorm.Model
 	OfferTermCode string
+	IngestionServiceID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []IngestionService_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []IngestionService_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*IngestionService_Term_PriceDimensions `gorm:"ForeignKey:IngestionService_TermID"`
+	TermAttributes []*IngestionService_Term_Attributes `gorm:"ForeignKey:IngestionService_TermID"`
 }
 
 type IngestionService_Term_Attributes struct {
 	gorm.Model
+	IngestionService_TermID	uint
 	Key	string
 	Value	string
 }
 
 type IngestionService_Term_PriceDimensions struct {
 	gorm.Model
+	IngestionService_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	IngestionService_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*IngestionService_Term_PricePerUnit `gorm:"ForeignKey:IngestionService_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type IngestionService_Term_PricePerUnit struct {
 	gorm.Model
+	IngestionService_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a IngestionService) QueryProducts(q func(product IngestionService_Product) bool) []IngestionService_Product{
-	ret := []IngestionService_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a IngestionService) QueryTerms(t string, q func(product IngestionService_Term) bool) []IngestionService_Term{
-	ret := []IngestionService_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *IngestionService) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/IngestionService/current/index.json"

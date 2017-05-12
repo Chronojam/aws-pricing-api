@@ -28,17 +28,17 @@ type rawAWSDeviceFarm_Term struct {
 
 func (l *AWSDeviceFarm) UnmarshalJSON(data []byte) error {
 	var p rawAWSDeviceFarm
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSDeviceFarm_Product{}
-	terms := []AWSDeviceFarm_Term{}
+	products := []*AWSDeviceFarm_Product{}
+	terms := []*AWSDeviceFarm_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSDeviceFarm) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSDeviceFarm_Term_PriceDimensions{}
-				tAttributes := []AWSDeviceFarm_Term_Attributes{}
+				pDimensions := []*AWSDeviceFarm_Term_PriceDimensions{}
+				tAttributes := []*AWSDeviceFarm_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSDeviceFarm) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSDeviceFarm_Term{
@@ -69,7 +69,7 @@ func (l *AWSDeviceFarm) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,78 +91,64 @@ type AWSDeviceFarm struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSDeviceFarm_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSDeviceFarm_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSDeviceFarm_Product `gorm:"ForeignKey:AWSDeviceFarmID"`
+	Terms		[]*AWSDeviceFarm_Term`gorm:"ForeignKey:AWSDeviceFarmID"`
 }
 type AWSDeviceFarm_Product struct {
 	gorm.Model
-		Sku	string
+		AWSDeviceFarmID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AWSDeviceFarm_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AWSDeviceFarm_Product_Attributes	`gorm:"ForeignKey:AWSDeviceFarm_Product_AttributesID"`
 }
 type AWSDeviceFarm_Product_Attributes struct {
 	gorm.Model
-		Location	string
+		AWSDeviceFarm_Product_AttributesID	uint
+	Servicecode	string
+	Location	string
 	LocationType	string
 	Usagetype	string
 	DeviceOs	string
-	Servicecode	string
+	ExecutionMode	string
 	Description	string
 	Operation	string
-	ExecutionMode	string
 	MeterMode	string
 }
 
 type AWSDeviceFarm_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSDeviceFarmID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSDeviceFarm_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSDeviceFarm_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSDeviceFarm_Term_PriceDimensions `gorm:"ForeignKey:AWSDeviceFarm_TermID"`
+	TermAttributes []*AWSDeviceFarm_Term_Attributes `gorm:"ForeignKey:AWSDeviceFarm_TermID"`
 }
 
 type AWSDeviceFarm_Term_Attributes struct {
 	gorm.Model
+	AWSDeviceFarm_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSDeviceFarm_Term_PriceDimensions struct {
 	gorm.Model
+	AWSDeviceFarm_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSDeviceFarm_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSDeviceFarm_Term_PricePerUnit `gorm:"ForeignKey:AWSDeviceFarm_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSDeviceFarm_Term_PricePerUnit struct {
 	gorm.Model
+	AWSDeviceFarm_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSDeviceFarm) QueryProducts(q func(product AWSDeviceFarm_Product) bool) []AWSDeviceFarm_Product{
-	ret := []AWSDeviceFarm_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSDeviceFarm) QueryTerms(t string, q func(product AWSDeviceFarm_Term) bool) []AWSDeviceFarm_Term{
-	ret := []AWSDeviceFarm_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSDeviceFarm) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSDeviceFarm/current/index.json"

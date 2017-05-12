@@ -28,17 +28,17 @@ type rawAmazonETS_Term struct {
 
 func (l *AmazonETS) UnmarshalJSON(data []byte) error {
 	var p rawAmazonETS
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonETS_Product{}
-	terms := []AmazonETS_Term{}
+	products := []*AmazonETS_Product{}
+	terms := []*AmazonETS_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonETS) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonETS_Term_PriceDimensions{}
-				tAttributes := []AmazonETS_Term_Attributes{}
+				pDimensions := []*AmazonETS_Term_PriceDimensions{}
+				tAttributes := []*AmazonETS_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonETS) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonETS_Term{
@@ -69,7 +69,7 @@ func (l *AmazonETS) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,76 +91,62 @@ type AmazonETS struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonETS_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonETS_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonETS_Product `gorm:"ForeignKey:AmazonETSID"`
+	Terms		[]*AmazonETS_Term`gorm:"ForeignKey:AmazonETSID"`
 }
 type AmazonETS_Product struct {
 	gorm.Model
-		ProductFamily	string
-	Attributes	AmazonETS_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AmazonETSID	uint
+	Attributes	AmazonETS_Product_Attributes	`gorm:"ForeignKey:AmazonETS_Product_AttributesID"`
 	Sku	string
+	ProductFamily	string
 }
 type AmazonETS_Product_Attributes struct {
 	gorm.Model
-		LocationType	string
-	Usagetype	string
+		AmazonETS_Product_AttributesID	uint
 	Operation	string
 	TranscodingResult	string
 	VideoResolution	string
 	Servicecode	string
 	Location	string
+	LocationType	string
+	Usagetype	string
 }
 
 type AmazonETS_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonETSID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonETS_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonETS_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonETS_Term_PriceDimensions `gorm:"ForeignKey:AmazonETS_TermID"`
+	TermAttributes []*AmazonETS_Term_Attributes `gorm:"ForeignKey:AmazonETS_TermID"`
 }
 
 type AmazonETS_Term_Attributes struct {
 	gorm.Model
+	AmazonETS_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonETS_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonETS_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonETS_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonETS_Term_PricePerUnit `gorm:"ForeignKey:AmazonETS_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonETS_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonETS_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonETS) QueryProducts(q func(product AmazonETS_Product) bool) []AmazonETS_Product{
-	ret := []AmazonETS_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonETS) QueryTerms(t string, q func(product AmazonETS_Term) bool) []AmazonETS_Term{
-	ret := []AmazonETS_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonETS) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonETS/current/index.json"

@@ -28,17 +28,17 @@ type rawAmazonStates_Term struct {
 
 func (l *AmazonStates) UnmarshalJSON(data []byte) error {
 	var p rawAmazonStates
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonStates_Product{}
-	terms := []AmazonStates_Term{}
+	products := []*AmazonStates_Product{}
+	terms := []*AmazonStates_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonStates) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonStates_Term_PriceDimensions{}
-				tAttributes := []AmazonStates_Term_Attributes{}
+				pDimensions := []*AmazonStates_Term_PriceDimensions{}
+				tAttributes := []*AmazonStates_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonStates) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonStates_Term{
@@ -69,7 +69,7 @@ func (l *AmazonStates) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AmazonStates struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonStates_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonStates_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonStates_Product `gorm:"ForeignKey:AmazonStatesID"`
+	Terms		[]*AmazonStates_Term`gorm:"ForeignKey:AmazonStatesID"`
 }
 type AmazonStates_Product struct {
 	gorm.Model
-		ProductFamily	string
-	Attributes	AmazonStates_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AmazonStatesID	uint
 	Sku	string
+	ProductFamily	string
+	Attributes	AmazonStates_Product_Attributes	`gorm:"ForeignKey:AmazonStates_Product_AttributesID"`
 }
 type AmazonStates_Product_Attributes struct {
 	gorm.Model
-		FromLocation	string
+		AmazonStates_Product_AttributesID	uint
+	Operation	string
+	Servicecode	string
+	TransferType	string
+	FromLocation	string
 	FromLocationType	string
 	ToLocation	string
 	ToLocationType	string
 	Usagetype	string
-	Operation	string
-	Servicecode	string
-	TransferType	string
 }
 
 type AmazonStates_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonStatesID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonStates_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonStates_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonStates_Term_PriceDimensions `gorm:"ForeignKey:AmazonStates_TermID"`
+	TermAttributes []*AmazonStates_Term_Attributes `gorm:"ForeignKey:AmazonStates_TermID"`
 }
 
 type AmazonStates_Term_Attributes struct {
 	gorm.Model
+	AmazonStates_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonStates_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonStates_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonStates_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonStates_Term_PricePerUnit `gorm:"ForeignKey:AmazonStates_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonStates_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonStates_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonStates) QueryProducts(q func(product AmazonStates_Product) bool) []AmazonStates_Product{
-	ret := []AmazonStates_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonStates) QueryTerms(t string, q func(product AmazonStates_Term) bool) []AmazonStates_Term{
-	ret := []AmazonStates_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonStates) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonStates/current/index.json"

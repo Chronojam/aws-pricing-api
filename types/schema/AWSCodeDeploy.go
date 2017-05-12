@@ -28,17 +28,17 @@ type rawAWSCodeDeploy_Term struct {
 
 func (l *AWSCodeDeploy) UnmarshalJSON(data []byte) error {
 	var p rawAWSCodeDeploy
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSCodeDeploy_Product{}
-	terms := []AWSCodeDeploy_Term{}
+	products := []*AWSCodeDeploy_Product{}
+	terms := []*AWSCodeDeploy_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSCodeDeploy) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSCodeDeploy_Term_PriceDimensions{}
-				tAttributes := []AWSCodeDeploy_Term_Attributes{}
+				pDimensions := []*AWSCodeDeploy_Term_PriceDimensions{}
+				tAttributes := []*AWSCodeDeploy_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSCodeDeploy) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSCodeDeploy_Term{
@@ -69,7 +69,7 @@ func (l *AWSCodeDeploy) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,75 +91,61 @@ type AWSCodeDeploy struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSCodeDeploy_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSCodeDeploy_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSCodeDeploy_Product `gorm:"ForeignKey:AWSCodeDeployID"`
+	Terms		[]*AWSCodeDeploy_Term`gorm:"ForeignKey:AWSCodeDeployID"`
 }
 type AWSCodeDeploy_Product struct {
 	gorm.Model
-		Sku	string
+		AWSCodeDeployID	uint
 	ProductFamily	string
-	Attributes	AWSCodeDeploy_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AWSCodeDeploy_Product_Attributes	`gorm:"ForeignKey:AWSCodeDeploy_Product_AttributesID"`
+	Sku	string
 }
 type AWSCodeDeploy_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
-	Location	string
+		AWSCodeDeploy_Product_AttributesID	uint
 	LocationType	string
 	Usagetype	string
 	Operation	string
 	DeploymentLocation	string
+	Servicecode	string
+	Location	string
 }
 
 type AWSCodeDeploy_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSCodeDeployID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSCodeDeploy_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSCodeDeploy_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSCodeDeploy_Term_PriceDimensions `gorm:"ForeignKey:AWSCodeDeploy_TermID"`
+	TermAttributes []*AWSCodeDeploy_Term_Attributes `gorm:"ForeignKey:AWSCodeDeploy_TermID"`
 }
 
 type AWSCodeDeploy_Term_Attributes struct {
 	gorm.Model
+	AWSCodeDeploy_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSCodeDeploy_Term_PriceDimensions struct {
 	gorm.Model
+	AWSCodeDeploy_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSCodeDeploy_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSCodeDeploy_Term_PricePerUnit `gorm:"ForeignKey:AWSCodeDeploy_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSCodeDeploy_Term_PricePerUnit struct {
 	gorm.Model
+	AWSCodeDeploy_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSCodeDeploy) QueryProducts(q func(product AWSCodeDeploy_Product) bool) []AWSCodeDeploy_Product{
-	ret := []AWSCodeDeploy_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSCodeDeploy) QueryTerms(t string, q func(product AWSCodeDeploy_Term) bool) []AWSCodeDeploy_Term{
-	ret := []AWSCodeDeploy_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSCodeDeploy) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSCodeDeploy/current/index.json"

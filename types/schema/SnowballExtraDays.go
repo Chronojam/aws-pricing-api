@@ -28,17 +28,17 @@ type rawSnowballExtraDays_Term struct {
 
 func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
 	var p rawSnowballExtraDays
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []SnowballExtraDays_Product{}
-	terms := []SnowballExtraDays_Term{}
+	products := []*SnowballExtraDays_Product{}
+	terms := []*SnowballExtraDays_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []SnowballExtraDays_Term_PriceDimensions{}
-				tAttributes := []SnowballExtraDays_Term_Attributes{}
+				pDimensions := []*SnowballExtraDays_Term_PriceDimensions{}
+				tAttributes := []*SnowballExtraDays_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := SnowballExtraDays_Term{
@@ -69,7 +69,7 @@ func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type SnowballExtraDays struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]SnowballExtraDays_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]SnowballExtraDays_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*SnowballExtraDays_Product `gorm:"ForeignKey:SnowballExtraDaysID"`
+	Terms		[]*SnowballExtraDays_Term`gorm:"ForeignKey:SnowballExtraDaysID"`
 }
 type SnowballExtraDays_Product struct {
 	gorm.Model
-		Attributes	SnowballExtraDays_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		SnowballExtraDaysID	uint
 	Sku	string
 	ProductFamily	string
+	Attributes	SnowballExtraDays_Product_Attributes	`gorm:"ForeignKey:SnowballExtraDays_Product_AttributesID"`
 }
 type SnowballExtraDays_Product_Attributes struct {
 	gorm.Model
-		FeeCode	string
+		SnowballExtraDays_Product_AttributesID	uint
+	LocationType	string
+	FeeCode	string
 	FeeDescription	string
 	Usagetype	string
 	Operation	string
 	SnowballType	string
 	Servicecode	string
 	Location	string
-	LocationType	string
 }
 
 type SnowballExtraDays_Term struct {
 	gorm.Model
 	OfferTermCode string
+	SnowballExtraDaysID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []SnowballExtraDays_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []SnowballExtraDays_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*SnowballExtraDays_Term_PriceDimensions `gorm:"ForeignKey:SnowballExtraDays_TermID"`
+	TermAttributes []*SnowballExtraDays_Term_Attributes `gorm:"ForeignKey:SnowballExtraDays_TermID"`
 }
 
 type SnowballExtraDays_Term_Attributes struct {
 	gorm.Model
+	SnowballExtraDays_TermID	uint
 	Key	string
 	Value	string
 }
 
 type SnowballExtraDays_Term_PriceDimensions struct {
 	gorm.Model
+	SnowballExtraDays_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	SnowballExtraDays_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*SnowballExtraDays_Term_PricePerUnit `gorm:"ForeignKey:SnowballExtraDays_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type SnowballExtraDays_Term_PricePerUnit struct {
 	gorm.Model
+	SnowballExtraDays_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a SnowballExtraDays) QueryProducts(q func(product SnowballExtraDays_Product) bool) []SnowballExtraDays_Product{
-	ret := []SnowballExtraDays_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a SnowballExtraDays) QueryTerms(t string, q func(product SnowballExtraDays_Term) bool) []SnowballExtraDays_Term{
-	ret := []SnowballExtraDays_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *SnowballExtraDays) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/SnowballExtraDays/current/index.json"

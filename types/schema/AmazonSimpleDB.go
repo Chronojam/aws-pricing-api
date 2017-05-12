@@ -28,17 +28,17 @@ type rawAmazonSimpleDB_Term struct {
 
 func (l *AmazonSimpleDB) UnmarshalJSON(data []byte) error {
 	var p rawAmazonSimpleDB
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonSimpleDB_Product{}
-	terms := []AmazonSimpleDB_Term{}
+	products := []*AmazonSimpleDB_Product{}
+	terms := []*AmazonSimpleDB_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonSimpleDB) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonSimpleDB_Term_PriceDimensions{}
-				tAttributes := []AmazonSimpleDB_Term_Attributes{}
+				pDimensions := []*AmazonSimpleDB_Term_PriceDimensions{}
+				tAttributes := []*AmazonSimpleDB_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonSimpleDB) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonSimpleDB_Term{
@@ -69,7 +69,7 @@ func (l *AmazonSimpleDB) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,75 +91,63 @@ type AmazonSimpleDB struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonSimpleDB_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonSimpleDB_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonSimpleDB_Product `gorm:"ForeignKey:AmazonSimpleDBID"`
+	Terms		[]*AmazonSimpleDB_Term`gorm:"ForeignKey:AmazonSimpleDBID"`
 }
 type AmazonSimpleDB_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonSimpleDBID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonSimpleDB_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonSimpleDB_Product_Attributes	`gorm:"ForeignKey:AmazonSimpleDB_Product_AttributesID"`
 }
 type AmazonSimpleDB_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
-	Location	string
-	LocationType	string
-	VolumeType	string
+		AmazonSimpleDB_Product_AttributesID	uint
+	TransferType	string
+	FromLocation	string
+	FromLocationType	string
+	ToLocation	string
+	ToLocationType	string
 	Usagetype	string
 	Operation	string
+	Servicecode	string
 }
 
 type AmazonSimpleDB_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonSimpleDBID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonSimpleDB_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonSimpleDB_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonSimpleDB_Term_PriceDimensions `gorm:"ForeignKey:AmazonSimpleDB_TermID"`
+	TermAttributes []*AmazonSimpleDB_Term_Attributes `gorm:"ForeignKey:AmazonSimpleDB_TermID"`
 }
 
 type AmazonSimpleDB_Term_Attributes struct {
 	gorm.Model
+	AmazonSimpleDB_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonSimpleDB_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonSimpleDB_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonSimpleDB_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonSimpleDB_Term_PricePerUnit `gorm:"ForeignKey:AmazonSimpleDB_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonSimpleDB_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonSimpleDB_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonSimpleDB) QueryProducts(q func(product AmazonSimpleDB_Product) bool) []AmazonSimpleDB_Product{
-	ret := []AmazonSimpleDB_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonSimpleDB) QueryTerms(t string, q func(product AmazonSimpleDB_Term) bool) []AmazonSimpleDB_Term{
-	ret := []AmazonSimpleDB_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonSimpleDB) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSimpleDB/current/index.json"

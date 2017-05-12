@@ -28,17 +28,17 @@ type rawAmazonKinesisFirehose_Term struct {
 
 func (l *AmazonKinesisFirehose) UnmarshalJSON(data []byte) error {
 	var p rawAmazonKinesisFirehose
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonKinesisFirehose_Product{}
-	terms := []AmazonKinesisFirehose_Term{}
+	products := []*AmazonKinesisFirehose_Product{}
+	terms := []*AmazonKinesisFirehose_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonKinesisFirehose) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonKinesisFirehose_Term_PriceDimensions{}
-				tAttributes := []AmazonKinesisFirehose_Term_Attributes{}
+				pDimensions := []*AmazonKinesisFirehose_Term_PriceDimensions{}
+				tAttributes := []*AmazonKinesisFirehose_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonKinesisFirehose) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonKinesisFirehose_Term{
@@ -69,7 +69,7 @@ func (l *AmazonKinesisFirehose) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,18 +91,20 @@ type AmazonKinesisFirehose struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonKinesisFirehose_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonKinesisFirehose_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonKinesisFirehose_Product `gorm:"ForeignKey:AmazonKinesisFirehoseID"`
+	Terms		[]*AmazonKinesisFirehose_Term`gorm:"ForeignKey:AmazonKinesisFirehoseID"`
 }
 type AmazonKinesisFirehose_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonKinesisFirehoseID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonKinesisFirehose_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonKinesisFirehose_Product_Attributes	`gorm:"ForeignKey:AmazonKinesisFirehose_Product_AttributesID"`
 }
 type AmazonKinesisFirehose_Product_Attributes struct {
 	gorm.Model
-		Usagetype	string
+		AmazonKinesisFirehose_Product_AttributesID	uint
+	Usagetype	string
 	Operation	string
 	Servicecode	string
 	Description	string
@@ -114,53 +116,37 @@ type AmazonKinesisFirehose_Product_Attributes struct {
 type AmazonKinesisFirehose_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonKinesisFirehoseID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonKinesisFirehose_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonKinesisFirehose_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonKinesisFirehose_Term_PriceDimensions `gorm:"ForeignKey:AmazonKinesisFirehose_TermID"`
+	TermAttributes []*AmazonKinesisFirehose_Term_Attributes `gorm:"ForeignKey:AmazonKinesisFirehose_TermID"`
 }
 
 type AmazonKinesisFirehose_Term_Attributes struct {
 	gorm.Model
+	AmazonKinesisFirehose_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonKinesisFirehose_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonKinesisFirehose_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonKinesisFirehose_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonKinesisFirehose_Term_PricePerUnit `gorm:"ForeignKey:AmazonKinesisFirehose_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonKinesisFirehose_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonKinesisFirehose_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonKinesisFirehose) QueryProducts(q func(product AmazonKinesisFirehose_Product) bool) []AmazonKinesisFirehose_Product{
-	ret := []AmazonKinesisFirehose_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonKinesisFirehose) QueryTerms(t string, q func(product AmazonKinesisFirehose_Term) bool) []AmazonKinesisFirehose_Term{
-	ret := []AmazonKinesisFirehose_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonKinesisFirehose) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonKinesisFirehose/current/index.json"

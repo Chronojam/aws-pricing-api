@@ -28,17 +28,17 @@ type rawAmazonGameLift_Term struct {
 
 func (l *AmazonGameLift) UnmarshalJSON(data []byte) error {
 	var p rawAmazonGameLift
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonGameLift_Product{}
-	terms := []AmazonGameLift_Term{}
+	products := []*AmazonGameLift_Product{}
+	terms := []*AmazonGameLift_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonGameLift) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonGameLift_Term_PriceDimensions{}
-				tAttributes := []AmazonGameLift_Term_Attributes{}
+				pDimensions := []*AmazonGameLift_Term_PriceDimensions{}
+				tAttributes := []*AmazonGameLift_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonGameLift) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonGameLift_Term{
@@ -69,7 +69,7 @@ func (l *AmazonGameLift) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,66 @@ type AmazonGameLift struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonGameLift_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonGameLift_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonGameLift_Product `gorm:"ForeignKey:AmazonGameLiftID"`
+	Terms		[]*AmazonGameLift_Term`gorm:"ForeignKey:AmazonGameLiftID"`
 }
 type AmazonGameLift_Product struct {
 	gorm.Model
-		ProductFamily	string
-	Attributes	AmazonGameLift_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AmazonGameLiftID	uint
+	ProductFamily	string
+	Attributes	AmazonGameLift_Product_Attributes	`gorm:"ForeignKey:AmazonGameLift_Product_AttributesID"`
 	Sku	string
 }
 type AmazonGameLift_Product_Attributes struct {
 	gorm.Model
-		ToLocationType	string
+		AmazonGameLift_Product_AttributesID	uint
+	InstanceType	string
 	Usagetype	string
 	Operation	string
+	Ecu	string
+	MemoryGib	string
+	Location	string
+	LocationType	string
+	Vcpu	string
+	OperatingSystem	string
+	InstanceStorageGb	string
 	Servicecode	string
-	TransferType	string
-	FromLocation	string
-	FromLocationType	string
-	ToLocation	string
 }
 
 type AmazonGameLift_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonGameLiftID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonGameLift_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonGameLift_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonGameLift_Term_PriceDimensions `gorm:"ForeignKey:AmazonGameLift_TermID"`
+	TermAttributes []*AmazonGameLift_Term_Attributes `gorm:"ForeignKey:AmazonGameLift_TermID"`
 }
 
 type AmazonGameLift_Term_Attributes struct {
 	gorm.Model
+	AmazonGameLift_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonGameLift_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonGameLift_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonGameLift_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonGameLift_Term_PricePerUnit `gorm:"ForeignKey:AmazonGameLift_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonGameLift_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonGameLift_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonGameLift) QueryProducts(q func(product AmazonGameLift_Product) bool) []AmazonGameLift_Product{
-	ret := []AmazonGameLift_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonGameLift) QueryTerms(t string, q func(product AmazonGameLift_Term) bool) []AmazonGameLift_Term{
-	ret := []AmazonGameLift_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonGameLift) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonGameLift/current/index.json"

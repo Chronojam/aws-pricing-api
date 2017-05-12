@@ -28,17 +28,17 @@ type rawAWSConfig_Term struct {
 
 func (l *AWSConfig) UnmarshalJSON(data []byte) error {
 	var p rawAWSConfig
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSConfig_Product{}
-	terms := []AWSConfig_Term{}
+	products := []*AWSConfig_Product{}
+	terms := []*AWSConfig_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSConfig) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSConfig_Term_PriceDimensions{}
-				tAttributes := []AWSConfig_Term_Attributes{}
+				pDimensions := []*AWSConfig_Term_PriceDimensions{}
+				tAttributes := []*AWSConfig_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSConfig) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSConfig_Term{
@@ -69,7 +69,7 @@ func (l *AWSConfig) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,74 +91,60 @@ type AWSConfig struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSConfig_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSConfig_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSConfig_Product `gorm:"ForeignKey:AWSConfigID"`
+	Terms		[]*AWSConfig_Term`gorm:"ForeignKey:AWSConfigID"`
 }
 type AWSConfig_Product struct {
 	gorm.Model
-		Sku	string
+		AWSConfigID	uint
+	Attributes	AWSConfig_Product_Attributes	`gorm:"ForeignKey:AWSConfig_Product_AttributesID"`
+	Sku	string
 	ProductFamily	string
-	Attributes	AWSConfig_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
 type AWSConfig_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
-	Location	string
-	LocationType	string
+		AWSConfig_Product_AttributesID	uint
 	Usagetype	string
 	Operation	string
+	Servicecode	string
+	Location	string
+	LocationType	string
 }
 
 type AWSConfig_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSConfigID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSConfig_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSConfig_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSConfig_Term_PriceDimensions `gorm:"ForeignKey:AWSConfig_TermID"`
+	TermAttributes []*AWSConfig_Term_Attributes `gorm:"ForeignKey:AWSConfig_TermID"`
 }
 
 type AWSConfig_Term_Attributes struct {
 	gorm.Model
+	AWSConfig_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSConfig_Term_PriceDimensions struct {
 	gorm.Model
+	AWSConfig_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSConfig_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSConfig_Term_PricePerUnit `gorm:"ForeignKey:AWSConfig_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSConfig_Term_PricePerUnit struct {
 	gorm.Model
+	AWSConfig_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSConfig) QueryProducts(q func(product AWSConfig_Product) bool) []AWSConfig_Product{
-	ret := []AWSConfig_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSConfig) QueryTerms(t string, q func(product AWSConfig_Term) bool) []AWSConfig_Term{
-	ret := []AWSConfig_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSConfig) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSConfig/current/index.json"

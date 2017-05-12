@@ -28,17 +28,17 @@ type rawAmazonS3_Term struct {
 
 func (l *AmazonS3) UnmarshalJSON(data []byte) error {
 	var p rawAmazonS3
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonS3_Product{}
-	terms := []AmazonS3_Term{}
+	products := []*AmazonS3_Product{}
+	terms := []*AmazonS3_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonS3) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonS3_Term_PriceDimensions{}
-				tAttributes := []AmazonS3_Term_Attributes{}
+				pDimensions := []*AmazonS3_Term_PriceDimensions{}
+				tAttributes := []*AmazonS3_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonS3) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonS3_Term{
@@ -69,7 +69,7 @@ func (l *AmazonS3) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,64 @@ type AmazonS3 struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonS3_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonS3_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonS3_Product `gorm:"ForeignKey:AmazonS3ID"`
+	Terms		[]*AmazonS3_Term`gorm:"ForeignKey:AmazonS3ID"`
 }
 type AmazonS3_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonS3ID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonS3_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonS3_Product_Attributes	`gorm:"ForeignKey:AmazonS3_Product_AttributesID"`
 }
 type AmazonS3_Product_Attributes struct {
 	gorm.Model
-		FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
-	Usagetype	string
+		AmazonS3_Product_AttributesID	uint
+	StorageClass	string
 	Operation	string
+	Durability	string
+	Location	string
+	LocationType	string
+	Availability	string
+	VolumeType	string
+	Usagetype	string
 	Servicecode	string
-	TransferType	string
-	FromLocation	string
 }
 
 type AmazonS3_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonS3ID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonS3_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonS3_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonS3_Term_PriceDimensions `gorm:"ForeignKey:AmazonS3_TermID"`
+	TermAttributes []*AmazonS3_Term_Attributes `gorm:"ForeignKey:AmazonS3_TermID"`
 }
 
 type AmazonS3_Term_Attributes struct {
 	gorm.Model
+	AmazonS3_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonS3_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonS3_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonS3_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonS3_Term_PricePerUnit `gorm:"ForeignKey:AmazonS3_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonS3_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonS3_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonS3) QueryProducts(q func(product AmazonS3_Product) bool) []AmazonS3_Product{
-	ret := []AmazonS3_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonS3) QueryTerms(t string, q func(product AmazonS3_Term) bool) []AmazonS3_Term{
-	ret := []AmazonS3_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonS3) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/index.json"

@@ -28,17 +28,17 @@ type rawAmazonVPC_Term struct {
 
 func (l *AmazonVPC) UnmarshalJSON(data []byte) error {
 	var p rawAmazonVPC
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonVPC_Product{}
-	terms := []AmazonVPC_Term{}
+	products := []*AmazonVPC_Product{}
+	terms := []*AmazonVPC_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonVPC) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonVPC_Term_PriceDimensions{}
-				tAttributes := []AmazonVPC_Term_Attributes{}
+				pDimensions := []*AmazonVPC_Term_PriceDimensions{}
+				tAttributes := []*AmazonVPC_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonVPC) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonVPC_Term{
@@ -69,7 +69,7 @@ func (l *AmazonVPC) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AmazonVPC struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonVPC_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonVPC_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonVPC_Product `gorm:"ForeignKey:AmazonVPCID"`
+	Terms		[]*AmazonVPC_Term`gorm:"ForeignKey:AmazonVPCID"`
 }
 type AmazonVPC_Product struct {
 	gorm.Model
-		ProductFamily	string
-	Attributes	AmazonVPC_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AmazonVPCID	uint
 	Sku	string
+	ProductFamily	string
+	Attributes	AmazonVPC_Product_Attributes	`gorm:"ForeignKey:AmazonVPC_Product_AttributesID"`
 }
 type AmazonVPC_Product_Attributes struct {
 	gorm.Model
-		FromLocation	string
-	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
+		AmazonVPC_Product_AttributesID	uint
 	Usagetype	string
 	Operation	string
 	Servicecode	string
 	TransferType	string
+	FromLocation	string
+	FromLocationType	string
+	ToLocation	string
+	ToLocationType	string
 }
 
 type AmazonVPC_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonVPCID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonVPC_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonVPC_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonVPC_Term_PriceDimensions `gorm:"ForeignKey:AmazonVPC_TermID"`
+	TermAttributes []*AmazonVPC_Term_Attributes `gorm:"ForeignKey:AmazonVPC_TermID"`
 }
 
 type AmazonVPC_Term_Attributes struct {
 	gorm.Model
+	AmazonVPC_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonVPC_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonVPC_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonVPC_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonVPC_Term_PricePerUnit `gorm:"ForeignKey:AmazonVPC_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonVPC_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonVPC_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonVPC) QueryProducts(q func(product AmazonVPC_Product) bool) []AmazonVPC_Product{
-	ret := []AmazonVPC_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonVPC) QueryTerms(t string, q func(product AmazonVPC_Term) bool) []AmazonVPC_Term{
-	ret := []AmazonVPC_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonVPC) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/current/index.json"

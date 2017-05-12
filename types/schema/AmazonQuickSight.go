@@ -28,17 +28,17 @@ type rawAmazonQuickSight_Term struct {
 
 func (l *AmazonQuickSight) UnmarshalJSON(data []byte) error {
 	var p rawAmazonQuickSight
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonQuickSight_Product{}
-	terms := []AmazonQuickSight_Term{}
+	products := []*AmazonQuickSight_Product{}
+	terms := []*AmazonQuickSight_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonQuickSight) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonQuickSight_Term_PriceDimensions{}
-				tAttributes := []AmazonQuickSight_Term_Attributes{}
+				pDimensions := []*AmazonQuickSight_Term_PriceDimensions{}
+				tAttributes := []*AmazonQuickSight_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonQuickSight) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonQuickSight_Term{
@@ -69,7 +69,7 @@ func (l *AmazonQuickSight) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,78 +91,64 @@ type AmazonQuickSight struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonQuickSight_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonQuickSight_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonQuickSight_Product `gorm:"ForeignKey:AmazonQuickSightID"`
+	Terms		[]*AmazonQuickSight_Term`gorm:"ForeignKey:AmazonQuickSightID"`
 }
 type AmazonQuickSight_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonQuickSightID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonQuickSight_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonQuickSight_Product_Attributes	`gorm:"ForeignKey:AmazonQuickSight_Product_AttributesID"`
 }
 type AmazonQuickSight_Product_Attributes struct {
 	gorm.Model
-		Location	string
-	Group	string
+		AmazonQuickSight_Product_AttributesID	uint
+	LocationType	string
 	GroupDescription	string
+	SubscriptionType	string
 	Servicecode	string
+	Location	string
+	Group	string
 	Usagetype	string
 	Operation	string
 	Edition	string
-	SubscriptionType	string
-	LocationType	string
 }
 
 type AmazonQuickSight_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonQuickSightID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonQuickSight_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonQuickSight_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonQuickSight_Term_PriceDimensions `gorm:"ForeignKey:AmazonQuickSight_TermID"`
+	TermAttributes []*AmazonQuickSight_Term_Attributes `gorm:"ForeignKey:AmazonQuickSight_TermID"`
 }
 
 type AmazonQuickSight_Term_Attributes struct {
 	gorm.Model
+	AmazonQuickSight_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonQuickSight_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonQuickSight_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonQuickSight_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonQuickSight_Term_PricePerUnit `gorm:"ForeignKey:AmazonQuickSight_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonQuickSight_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonQuickSight_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonQuickSight) QueryProducts(q func(product AmazonQuickSight_Product) bool) []AmazonQuickSight_Product{
-	ret := []AmazonQuickSight_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonQuickSight) QueryTerms(t string, q func(product AmazonQuickSight_Term) bool) []AmazonQuickSight_Term{
-	ret := []AmazonQuickSight_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonQuickSight) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonQuickSight/current/index.json"

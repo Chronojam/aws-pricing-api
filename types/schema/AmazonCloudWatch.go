@@ -28,17 +28,17 @@ type rawAmazonCloudWatch_Term struct {
 
 func (l *AmazonCloudWatch) UnmarshalJSON(data []byte) error {
 	var p rawAmazonCloudWatch
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonCloudWatch_Product{}
-	terms := []AmazonCloudWatch_Term{}
+	products := []*AmazonCloudWatch_Product{}
+	terms := []*AmazonCloudWatch_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonCloudWatch) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonCloudWatch_Term_PriceDimensions{}
-				tAttributes := []AmazonCloudWatch_Term_Attributes{}
+				pDimensions := []*AmazonCloudWatch_Term_PriceDimensions{}
+				tAttributes := []*AmazonCloudWatch_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonCloudWatch) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonCloudWatch_Term{
@@ -69,7 +69,7 @@ func (l *AmazonCloudWatch) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,76 +91,63 @@ type AmazonCloudWatch struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonCloudWatch_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonCloudWatch_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonCloudWatch_Product `gorm:"ForeignKey:AmazonCloudWatchID"`
+	Terms		[]*AmazonCloudWatch_Term`gorm:"ForeignKey:AmazonCloudWatchID"`
 }
 type AmazonCloudWatch_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonCloudWatchID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonCloudWatch_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonCloudWatch_Product_Attributes	`gorm:"ForeignKey:AmazonCloudWatch_Product_AttributesID"`
 }
 type AmazonCloudWatch_Product_Attributes struct {
 	gorm.Model
-		Location	string
+		AmazonCloudWatch_Product_AttributesID	uint
+	Version	string
+	Servicecode	string
+	Location	string
 	LocationType	string
 	Group	string
 	GroupDescription	string
 	Usagetype	string
 	Operation	string
-	Servicecode	string
 }
 
 type AmazonCloudWatch_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonCloudWatchID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonCloudWatch_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonCloudWatch_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonCloudWatch_Term_PriceDimensions `gorm:"ForeignKey:AmazonCloudWatch_TermID"`
+	TermAttributes []*AmazonCloudWatch_Term_Attributes `gorm:"ForeignKey:AmazonCloudWatch_TermID"`
 }
 
 type AmazonCloudWatch_Term_Attributes struct {
 	gorm.Model
+	AmazonCloudWatch_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonCloudWatch_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonCloudWatch_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonCloudWatch_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonCloudWatch_Term_PricePerUnit `gorm:"ForeignKey:AmazonCloudWatch_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonCloudWatch_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonCloudWatch_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonCloudWatch) QueryProducts(q func(product AmazonCloudWatch_Product) bool) []AmazonCloudWatch_Product{
-	ret := []AmazonCloudWatch_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonCloudWatch) QueryTerms(t string, q func(product AmazonCloudWatch_Term) bool) []AmazonCloudWatch_Term{
-	ret := []AmazonCloudWatch_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonCloudWatch) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/index.json"

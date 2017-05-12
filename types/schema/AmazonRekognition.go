@@ -28,17 +28,17 @@ type rawAmazonRekognition_Term struct {
 
 func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
 	var p rawAmazonRekognition
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonRekognition_Product{}
-	terms := []AmazonRekognition_Term{}
+	products := []*AmazonRekognition_Product{}
+	terms := []*AmazonRekognition_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonRekognition_Term_PriceDimensions{}
-				tAttributes := []AmazonRekognition_Term_Attributes{}
+				pDimensions := []*AmazonRekognition_Term_PriceDimensions{}
+				tAttributes := []*AmazonRekognition_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonRekognition_Term{
@@ -69,7 +69,7 @@ func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,76 +91,62 @@ type AmazonRekognition struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonRekognition_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonRekognition_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonRekognition_Product `gorm:"ForeignKey:AmazonRekognitionID"`
+	Terms		[]*AmazonRekognition_Term`gorm:"ForeignKey:AmazonRekognitionID"`
 }
 type AmazonRekognition_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonRekognitionID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonRekognition_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonRekognition_Product_Attributes	`gorm:"ForeignKey:AmazonRekognition_Product_AttributesID"`
 }
 type AmazonRekognition_Product_Attributes struct {
 	gorm.Model
-		LocationType	string
-	Group	string
-	GroupDescription	string
-	Usagetype	string
+		AmazonRekognition_Product_AttributesID	uint
 	Operation	string
 	Servicecode	string
 	Location	string
+	LocationType	string
+	Group	string
+	GroupDescription	string
+	Usagetype	string
 }
 
 type AmazonRekognition_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonRekognitionID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonRekognition_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonRekognition_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonRekognition_Term_PriceDimensions `gorm:"ForeignKey:AmazonRekognition_TermID"`
+	TermAttributes []*AmazonRekognition_Term_Attributes `gorm:"ForeignKey:AmazonRekognition_TermID"`
 }
 
 type AmazonRekognition_Term_Attributes struct {
 	gorm.Model
+	AmazonRekognition_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonRekognition_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonRekognition_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonRekognition_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonRekognition_Term_PricePerUnit `gorm:"ForeignKey:AmazonRekognition_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonRekognition_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonRekognition_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonRekognition) QueryProducts(q func(product AmazonRekognition_Product) bool) []AmazonRekognition_Product{
-	ret := []AmazonRekognition_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonRekognition) QueryTerms(t string, q func(product AmazonRekognition_Term) bool) []AmazonRekognition_Term{
-	ret := []AmazonRekognition_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonRekognition) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRekognition/current/index.json"

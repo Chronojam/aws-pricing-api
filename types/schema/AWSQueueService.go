@@ -28,17 +28,17 @@ type rawAWSQueueService_Term struct {
 
 func (l *AWSQueueService) UnmarshalJSON(data []byte) error {
 	var p rawAWSQueueService
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSQueueService_Product{}
-	terms := []AWSQueueService_Term{}
+	products := []*AWSQueueService_Product{}
+	terms := []*AWSQueueService_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSQueueService) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSQueueService_Term_PriceDimensions{}
-				tAttributes := []AWSQueueService_Term_Attributes{}
+				pDimensions := []*AWSQueueService_Term_PriceDimensions{}
+				tAttributes := []*AWSQueueService_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSQueueService) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSQueueService_Term{
@@ -69,7 +69,7 @@ func (l *AWSQueueService) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AWSQueueService struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSQueueService_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSQueueService_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSQueueService_Product `gorm:"ForeignKey:AWSQueueServiceID"`
+	Terms		[]*AWSQueueService_Term`gorm:"ForeignKey:AWSQueueServiceID"`
 }
 type AWSQueueService_Product struct {
 	gorm.Model
-		Sku	string
+		AWSQueueServiceID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AWSQueueService_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AWSQueueService_Product_Attributes	`gorm:"ForeignKey:AWSQueueService_Product_AttributesID"`
 }
 type AWSQueueService_Product_Attributes struct {
 	gorm.Model
-		ToLocationType	string
-	Usagetype	string
-	Operation	string
-	Servicecode	string
+		AWSQueueService_Product_AttributesID	uint
 	TransferType	string
 	FromLocation	string
 	FromLocationType	string
 	ToLocation	string
+	ToLocationType	string
+	Usagetype	string
+	Operation	string
+	Servicecode	string
 }
 
 type AWSQueueService_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSQueueServiceID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSQueueService_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSQueueService_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSQueueService_Term_PriceDimensions `gorm:"ForeignKey:AWSQueueService_TermID"`
+	TermAttributes []*AWSQueueService_Term_Attributes `gorm:"ForeignKey:AWSQueueService_TermID"`
 }
 
 type AWSQueueService_Term_Attributes struct {
 	gorm.Model
+	AWSQueueService_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSQueueService_Term_PriceDimensions struct {
 	gorm.Model
+	AWSQueueService_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSQueueService_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSQueueService_Term_PricePerUnit `gorm:"ForeignKey:AWSQueueService_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSQueueService_Term_PricePerUnit struct {
 	gorm.Model
+	AWSQueueService_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSQueueService) QueryProducts(q func(product AWSQueueService_Product) bool) []AWSQueueService_Product{
-	ret := []AWSQueueService_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSQueueService) QueryTerms(t string, q func(product AWSQueueService_Term) bool) []AWSQueueService_Term{
-	ret := []AWSQueueService_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSQueueService) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSQueueService/current/index.json"

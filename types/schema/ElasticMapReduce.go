@@ -28,17 +28,17 @@ type rawElasticMapReduce_Term struct {
 
 func (l *ElasticMapReduce) UnmarshalJSON(data []byte) error {
 	var p rawElasticMapReduce
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []ElasticMapReduce_Product{}
-	terms := []ElasticMapReduce_Term{}
+	products := []*ElasticMapReduce_Product{}
+	terms := []*ElasticMapReduce_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *ElasticMapReduce) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []ElasticMapReduce_Term_PriceDimensions{}
-				tAttributes := []ElasticMapReduce_Term_Attributes{}
+				pDimensions := []*ElasticMapReduce_Term_PriceDimensions{}
+				tAttributes := []*ElasticMapReduce_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *ElasticMapReduce) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := ElasticMapReduce_Term{
@@ -69,7 +69,7 @@ func (l *ElasticMapReduce) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,18 +91,19 @@ type ElasticMapReduce struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]ElasticMapReduce_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]ElasticMapReduce_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*ElasticMapReduce_Product `gorm:"ForeignKey:ElasticMapReduceID"`
+	Terms		[]*ElasticMapReduce_Term`gorm:"ForeignKey:ElasticMapReduceID"`
 }
 type ElasticMapReduce_Product struct {
 	gorm.Model
-		ProductFamily	string
-	Attributes	ElasticMapReduce_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		ElasticMapReduceID	uint
 	Sku	string
+	ProductFamily	string
+	Attributes	ElasticMapReduce_Product_Attributes	`gorm:"ForeignKey:ElasticMapReduce_Product_AttributesID"`
 }
 type ElasticMapReduce_Product_Attributes struct {
 	gorm.Model
-		Usagetype	string
+		ElasticMapReduce_Product_AttributesID	uint
 	Operation	string
 	SoftwareType	string
 	Servicecode	string
@@ -110,58 +111,43 @@ type ElasticMapReduce_Product_Attributes struct {
 	LocationType	string
 	InstanceType	string
 	InstanceFamily	string
+	Usagetype	string
 }
 
 type ElasticMapReduce_Term struct {
 	gorm.Model
 	OfferTermCode string
+	ElasticMapReduceID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []ElasticMapReduce_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []ElasticMapReduce_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*ElasticMapReduce_Term_PriceDimensions `gorm:"ForeignKey:ElasticMapReduce_TermID"`
+	TermAttributes []*ElasticMapReduce_Term_Attributes `gorm:"ForeignKey:ElasticMapReduce_TermID"`
 }
 
 type ElasticMapReduce_Term_Attributes struct {
 	gorm.Model
+	ElasticMapReduce_TermID	uint
 	Key	string
 	Value	string
 }
 
 type ElasticMapReduce_Term_PriceDimensions struct {
 	gorm.Model
+	ElasticMapReduce_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	ElasticMapReduce_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*ElasticMapReduce_Term_PricePerUnit `gorm:"ForeignKey:ElasticMapReduce_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type ElasticMapReduce_Term_PricePerUnit struct {
 	gorm.Model
+	ElasticMapReduce_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a ElasticMapReduce) QueryProducts(q func(product ElasticMapReduce_Product) bool) []ElasticMapReduce_Product{
-	ret := []ElasticMapReduce_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a ElasticMapReduce) QueryTerms(t string, q func(product ElasticMapReduce_Term) bool) []ElasticMapReduce_Term{
-	ret := []ElasticMapReduce_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *ElasticMapReduce) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/ElasticMapReduce/current/index.json"

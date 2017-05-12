@@ -28,17 +28,17 @@ type rawAmazonPolly_Term struct {
 
 func (l *AmazonPolly) UnmarshalJSON(data []byte) error {
 	var p rawAmazonPolly
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonPolly_Product{}
-	terms := []AmazonPolly_Term{}
+	products := []*AmazonPolly_Product{}
+	terms := []*AmazonPolly_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonPolly) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonPolly_Term_PriceDimensions{}
-				tAttributes := []AmazonPolly_Term_Attributes{}
+				pDimensions := []*AmazonPolly_Term_PriceDimensions{}
+				tAttributes := []*AmazonPolly_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonPolly) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonPolly_Term{
@@ -69,7 +69,7 @@ func (l *AmazonPolly) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,18 +91,20 @@ type AmazonPolly struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonPolly_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonPolly_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonPolly_Product `gorm:"ForeignKey:AmazonPollyID"`
+	Terms		[]*AmazonPolly_Term`gorm:"ForeignKey:AmazonPollyID"`
 }
 type AmazonPolly_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonPollyID	uint
 	ProductFamily	string
-	Attributes	AmazonPolly_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonPolly_Product_Attributes	`gorm:"ForeignKey:AmazonPolly_Product_AttributesID"`
+	Sku	string
 }
 type AmazonPolly_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
+		AmazonPolly_Product_AttributesID	uint
+	Servicecode	string
 	Location	string
 	LocationType	string
 	Usagetype	string
@@ -112,53 +114,37 @@ type AmazonPolly_Product_Attributes struct {
 type AmazonPolly_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonPollyID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonPolly_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonPolly_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonPolly_Term_PriceDimensions `gorm:"ForeignKey:AmazonPolly_TermID"`
+	TermAttributes []*AmazonPolly_Term_Attributes `gorm:"ForeignKey:AmazonPolly_TermID"`
 }
 
 type AmazonPolly_Term_Attributes struct {
 	gorm.Model
+	AmazonPolly_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonPolly_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonPolly_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonPolly_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonPolly_Term_PricePerUnit `gorm:"ForeignKey:AmazonPolly_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonPolly_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonPolly_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonPolly) QueryProducts(q func(product AmazonPolly_Product) bool) []AmazonPolly_Product{
-	ret := []AmazonPolly_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonPolly) QueryTerms(t string, q func(product AmazonPolly_Term) bool) []AmazonPolly_Term{
-	ret := []AmazonPolly_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonPolly) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonPolly/current/index.json"

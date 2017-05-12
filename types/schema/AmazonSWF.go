@@ -28,17 +28,17 @@ type rawAmazonSWF_Term struct {
 
 func (l *AmazonSWF) UnmarshalJSON(data []byte) error {
 	var p rawAmazonSWF
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonSWF_Product{}
-	terms := []AmazonSWF_Term{}
+	products := []*AmazonSWF_Product{}
+	terms := []*AmazonSWF_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonSWF) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonSWF_Term_PriceDimensions{}
-				tAttributes := []AmazonSWF_Term_Attributes{}
+				pDimensions := []*AmazonSWF_Term_PriceDimensions{}
+				tAttributes := []*AmazonSWF_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonSWF) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonSWF_Term{
@@ -69,7 +69,7 @@ func (l *AmazonSWF) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AmazonSWF struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonSWF_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonSWF_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonSWF_Product `gorm:"ForeignKey:AmazonSWFID"`
+	Terms		[]*AmazonSWF_Term`gorm:"ForeignKey:AmazonSWFID"`
 }
 type AmazonSWF_Product struct {
 	gorm.Model
-		Attributes	AmazonSWF_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AmazonSWFID	uint
 	Sku	string
 	ProductFamily	string
+	Attributes	AmazonSWF_Product_Attributes	`gorm:"ForeignKey:AmazonSWF_Product_AttributesID"`
 }
 type AmazonSWF_Product_Attributes struct {
 	gorm.Model
-		FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
-	Usagetype	string
+		AmazonSWF_Product_AttributesID	uint
 	Operation	string
 	Servicecode	string
 	TransferType	string
 	FromLocation	string
+	FromLocationType	string
+	ToLocation	string
+	ToLocationType	string
+	Usagetype	string
 }
 
 type AmazonSWF_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonSWFID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonSWF_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonSWF_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonSWF_Term_PriceDimensions `gorm:"ForeignKey:AmazonSWF_TermID"`
+	TermAttributes []*AmazonSWF_Term_Attributes `gorm:"ForeignKey:AmazonSWF_TermID"`
 }
 
 type AmazonSWF_Term_Attributes struct {
 	gorm.Model
+	AmazonSWF_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonSWF_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonSWF_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonSWF_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonSWF_Term_PricePerUnit `gorm:"ForeignKey:AmazonSWF_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonSWF_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonSWF_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonSWF) QueryProducts(q func(product AmazonSWF_Product) bool) []AmazonSWF_Product{
-	ret := []AmazonSWF_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonSWF) QueryTerms(t string, q func(product AmazonSWF_Term) bool) []AmazonSWF_Term{
-	ret := []AmazonSWF_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonSWF) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSWF/current/index.json"

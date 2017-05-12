@@ -28,17 +28,17 @@ type rawCodeBuild_Term struct {
 
 func (l *CodeBuild) UnmarshalJSON(data []byte) error {
 	var p rawCodeBuild
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []CodeBuild_Product{}
-	terms := []CodeBuild_Term{}
+	products := []*CodeBuild_Product{}
+	terms := []*CodeBuild_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *CodeBuild) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []CodeBuild_Term_PriceDimensions{}
-				tAttributes := []CodeBuild_Term_Attributes{}
+				pDimensions := []*CodeBuild_Term_PriceDimensions{}
+				tAttributes := []*CodeBuild_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *CodeBuild) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := CodeBuild_Term{
@@ -69,7 +69,7 @@ func (l *CodeBuild) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,79 +91,65 @@ type CodeBuild struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]CodeBuild_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]CodeBuild_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*CodeBuild_Product `gorm:"ForeignKey:CodeBuildID"`
+	Terms		[]*CodeBuild_Term`gorm:"ForeignKey:CodeBuildID"`
 }
 type CodeBuild_Product struct {
 	gorm.Model
-		Attributes	CodeBuild_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		CodeBuildID	uint
 	Sku	string
 	ProductFamily	string
+	Attributes	CodeBuild_Product_Attributes	`gorm:"ForeignKey:CodeBuild_Product_AttributesID"`
 }
 type CodeBuild_Product_Attributes struct {
 	gorm.Model
-		ComputeFamily	string
-	Vcpu	string
-	OperatingSystem	string
-	LocationType	string
+		CodeBuild_Product_AttributesID	uint
+	ComputeType	string
 	Memory	string
+	OperatingSystem	string
+	ComputeFamily	string
+	Vcpu	string
 	Usagetype	string
 	Operation	string
-	ComputeType	string
 	Servicecode	string
 	Location	string
+	LocationType	string
 }
 
 type CodeBuild_Term struct {
 	gorm.Model
 	OfferTermCode string
+	CodeBuildID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []CodeBuild_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []CodeBuild_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*CodeBuild_Term_PriceDimensions `gorm:"ForeignKey:CodeBuild_TermID"`
+	TermAttributes []*CodeBuild_Term_Attributes `gorm:"ForeignKey:CodeBuild_TermID"`
 }
 
 type CodeBuild_Term_Attributes struct {
 	gorm.Model
+	CodeBuild_TermID	uint
 	Key	string
 	Value	string
 }
 
 type CodeBuild_Term_PriceDimensions struct {
 	gorm.Model
+	CodeBuild_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	CodeBuild_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*CodeBuild_Term_PricePerUnit `gorm:"ForeignKey:CodeBuild_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type CodeBuild_Term_PricePerUnit struct {
 	gorm.Model
+	CodeBuild_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a CodeBuild) QueryProducts(q func(product CodeBuild_Product) bool) []CodeBuild_Product{
-	ret := []CodeBuild_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a CodeBuild) QueryTerms(t string, q func(product CodeBuild_Term) bool) []CodeBuild_Term{
-	ret := []CodeBuild_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *CodeBuild) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/CodeBuild/current/index.json"

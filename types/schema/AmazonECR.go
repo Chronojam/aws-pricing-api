@@ -28,17 +28,17 @@ type rawAmazonECR_Term struct {
 
 func (l *AmazonECR) UnmarshalJSON(data []byte) error {
 	var p rawAmazonECR
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonECR_Product{}
-	terms := []AmazonECR_Term{}
+	products := []*AmazonECR_Product{}
+	terms := []*AmazonECR_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonECR) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonECR_Term_PriceDimensions{}
-				tAttributes := []AmazonECR_Term_Attributes{}
+				pDimensions := []*AmazonECR_Term_PriceDimensions{}
+				tAttributes := []*AmazonECR_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonECR) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonECR_Term{
@@ -69,7 +69,7 @@ func (l *AmazonECR) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,77 +91,63 @@ type AmazonECR struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonECR_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonECR_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonECR_Product `gorm:"ForeignKey:AmazonECRID"`
+	Terms		[]*AmazonECR_Term`gorm:"ForeignKey:AmazonECRID"`
 }
 type AmazonECR_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonECRID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonECR_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonECR_Product_Attributes	`gorm:"ForeignKey:AmazonECR_Product_AttributesID"`
 }
 type AmazonECR_Product_Attributes struct {
 	gorm.Model
-		Usagetype	string
+		AmazonECR_Product_AttributesID	uint
+	ToLocation	string
+	ToLocationType	string
+	Usagetype	string
 	Operation	string
 	Servicecode	string
 	TransferType	string
 	FromLocation	string
 	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
 }
 
 type AmazonECR_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonECRID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonECR_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonECR_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonECR_Term_PriceDimensions `gorm:"ForeignKey:AmazonECR_TermID"`
+	TermAttributes []*AmazonECR_Term_Attributes `gorm:"ForeignKey:AmazonECR_TermID"`
 }
 
 type AmazonECR_Term_Attributes struct {
 	gorm.Model
+	AmazonECR_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonECR_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonECR_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonECR_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonECR_Term_PricePerUnit `gorm:"ForeignKey:AmazonECR_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonECR_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonECR_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonECR) QueryProducts(q func(product AmazonECR_Product) bool) []AmazonECR_Product{
-	ret := []AmazonECR_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonECR) QueryTerms(t string, q func(product AmazonECR_Term) bool) []AmazonECR_Term{
-	ret := []AmazonECR_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonECR) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECR/current/index.json"

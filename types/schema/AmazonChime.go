@@ -28,17 +28,17 @@ type rawAmazonChime_Term struct {
 
 func (l *AmazonChime) UnmarshalJSON(data []byte) error {
 	var p rawAmazonChime
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonChime_Product{}
-	terms := []AmazonChime_Term{}
+	products := []*AmazonChime_Product{}
+	terms := []*AmazonChime_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonChime) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonChime_Term_PriceDimensions{}
-				tAttributes := []AmazonChime_Term_Attributes{}
+				pDimensions := []*AmazonChime_Term_PriceDimensions{}
+				tAttributes := []*AmazonChime_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonChime) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonChime_Term{
@@ -69,7 +69,7 @@ func (l *AmazonChime) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,75 +91,61 @@ type AmazonChime struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonChime_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonChime_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonChime_Product `gorm:"ForeignKey:AmazonChimeID"`
+	Terms		[]*AmazonChime_Term`gorm:"ForeignKey:AmazonChimeID"`
 }
 type AmazonChime_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonChimeID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonChime_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonChime_Product_Attributes	`gorm:"ForeignKey:AmazonChime_Product_AttributesID"`
 }
 type AmazonChime_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
-	Location	string
+		AmazonChime_Product_AttributesID	uint
 	LocationType	string
 	Usagetype	string
 	Operation	string
 	LicenseType	string
+	Servicecode	string
+	Location	string
 }
 
 type AmazonChime_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonChimeID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonChime_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonChime_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonChime_Term_PriceDimensions `gorm:"ForeignKey:AmazonChime_TermID"`
+	TermAttributes []*AmazonChime_Term_Attributes `gorm:"ForeignKey:AmazonChime_TermID"`
 }
 
 type AmazonChime_Term_Attributes struct {
 	gorm.Model
+	AmazonChime_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonChime_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonChime_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonChime_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonChime_Term_PricePerUnit `gorm:"ForeignKey:AmazonChime_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonChime_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonChime_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonChime) QueryProducts(q func(product AmazonChime_Product) bool) []AmazonChime_Product{
-	ret := []AmazonChime_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonChime) QueryTerms(t string, q func(product AmazonChime_Term) bool) []AmazonChime_Term{
-	ret := []AmazonChime_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonChime) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonChime/current/index.json"

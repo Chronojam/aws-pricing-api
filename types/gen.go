@@ -71,6 +71,7 @@ func Migrate(db *gorm.DB) error {
 		startm = startm + fmt.Sprintf("\tdb.AutoMigrate(&%s_Term_Attributes{})\n", strings.Title(o.Code))
 		startm = startm + fmt.Sprintf("\tdb.AutoMigrate(&%s_Term_PriceDimensions{})\n", strings.Title(o.Code))
 		startm = startm + fmt.Sprintf("\tdb.AutoMigrate(&%s_Term_PricePerUnit{})\n", strings.Title(o.Code))
+
 		ProcessForSchema(raw, o.Code, baseUrl+o.CurrentVersionUrl)
 		// ioutil.WriteFile("./raw/"+o.Code+".json", b, 0655)
 	}
@@ -113,17 +114,17 @@ type raw%s_Term struct {
 
 func (l *%s) UnmarshalJSON(data []byte) error {
 	var p raw%s
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []%s_Product{}
-	terms := []%s_Term{}
+	products := []*%s_Product{}
+	terms := []*%s_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -131,11 +132,11 @@ func (l *%s) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []%s_Term_PriceDimensions{}
-				tAttributes := []%s_Term_Attributes{}
+				pDimensions := []*%s_Term_PriceDimensions{}
+				tAttributes := []*%s_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -143,7 +144,7 @@ func (l *%s) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := %s_Term{
@@ -154,7 +155,7 @@ func (l *%s) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -176,12 +177,12 @@ type %s struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]%s_Product `+"\t`gorm:\"ForeignKey:ID,type:varchar(255)[]\"`"+`
-	Terms		[]%s_Term`+"\t`gorm:\"ForeignKey:ID,type:varchar(255)[]\"`",
+	Products	[]*%s_Product `+"`gorm:\"ForeignKey:%sID\"`"+`
+	Terms		[]*%s_Term`+"`gorm:\"ForeignKey:%sID\"`",
 		tName, tName, tName, tName, tName,
 		tName, tName, tName, tName, tName,
 		tName, tName, tName, tName, tName,
-		tName)
+		tName, tName, tName)
 	middling := "\n"
 	finish := "}\n"
 
@@ -194,7 +195,7 @@ type %s struct {
 		}
 		counter++
 
-		finish = finish + o.NewStruct(fmt.Sprintf("%s_%s", tName, "Product"), p.(map[string]interface{}))
+		finish = finish + o.NewStruct(fmt.Sprintf("%s_%s", tName, "Product"), p.(map[string]interface{}), tName)
 	}
 
 	// Straight up special case Terms
@@ -202,59 +203,38 @@ type %s struct {
 type %s_Term struct {
 	gorm.Model
 	OfferTermCode string
+	%sID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []%s_Term_PriceDimensions `+"\t`gorm:\"ForeignKey:ID,type:varchar(255)[]\"`"+`
-	TermAttributes []%s_Term_Attributes `+"\t`gorm:\"ForeignKey:ID,type:varchar(255)[]\"`"+`
+	PriceDimensions []*%s_Term_PriceDimensions `+"`gorm:\"ForeignKey:%s_TermID\"`"+`
+	TermAttributes []*%s_Term_Attributes `+"`gorm:\"ForeignKey:%s_TermID\"`"+`
 }
 
 type %s_Term_Attributes struct {
 	gorm.Model
+	%s_TermID	uint
 	Key	string
 	Value	string
 }
 
 type %s_Term_PriceDimensions struct {
 	gorm.Model
+	%s_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	%s_Term_PricePerUnit `+"\t`gorm:\"ForeignKey:ID,type:varchar(255)[]\"`"+`
-	AppliesTo	[]interface{}
+	PricePerUnit	*%s_Term_PricePerUnit `+"`gorm:\"ForeignKey:%s_Term_PriceDimensionsID\"`"+`
+	// AppliesTo	[]string
 }
 
 type %s_Term_PricePerUnit struct {
 	gorm.Model
+	%s_Term_PriceDimensionsID	uint
 	USD	string
-}`, tName, tName, tName, tName, tName, tName, tName)
-
-	// Add some helper functions to pull api data.
-	finish = finish + fmt.Sprintf(`
-func (a %s) QueryProducts(q func(product %s_Product) bool) []%s_Product{
-	ret := []%s_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}`, tName, tName, tName, tName)
-
-	finish = finish + fmt.Sprintf(`
-func (a %s) QueryTerms(t string, q func(product %s_Term) bool) []%s_Term{
-	ret := []%s_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}`, tName, tName, tName, tName)
+}`, tName, tName, tName, tName, tName, tName, tName, tName, tName, tName, tName, tName, tName, tName)
 
 	finish = finish + fmt.Sprintf(`
 func (a *%s) Refresh() error {
@@ -281,12 +261,12 @@ func (a *%s) Refresh() error {
 	return start + middling + finish
 }
 
-func (o Structure) NewStruct(name string, val map[string]interface{}) string {
+func (o Structure) NewStruct(name string, val map[string]interface{}, parent string) string {
 	tName := strings.Title(name)
 	start := fmt.Sprintf(`type %s struct {
 	gorm.Model
 	`, tName)
-	middling := ""
+	middling := fmt.Sprintf("\t%s\tuint\n", parent+"ID")
 	finish := "}\n"
 
 	for field, value := range val {
@@ -295,7 +275,7 @@ func (o Structure) NewStruct(name string, val map[string]interface{}) string {
 		switch value.(type) {
 		case map[string]interface{}:
 			n := fmt.Sprintf("%s_%s", tName, fUpper)
-			entry = fmt.Sprintf("\t%s\t%s\t`gorm:\"ForeignKey:ID,type:varchar(255)[]\"`", fUpper, n)
+			entry = fmt.Sprintf("\t%s\t%s\t`gorm:\"ForeignKey:%s\"`", fUpper, n, n+"ID")
 			isGarbage := false
 			for _, r := range fUpper {
 				switch {
@@ -304,7 +284,7 @@ func (o Structure) NewStruct(name string, val map[string]interface{}) string {
 				}
 			}
 			if !isGarbage {
-				finish = finish + o.NewStruct(n, value.(map[string]interface{}))
+				finish = finish + o.NewStruct(n, value.(map[string]interface{}), n)
 			} else {
 				counter := 0
 				for _, k := range value.(map[string]interface{}) {
@@ -315,9 +295,9 @@ func (o Structure) NewStruct(name string, val map[string]interface{}) string {
 					counter++
 					v, ok := k.(map[string]interface{})
 					if !ok {
-						entry = fmt.Sprintf("\t%s\t%s", fUpper, "string")
+						entry = fmt.Sprintf("\t%s\t%s", entry, fUpper, "string")
 					} else {
-						finish = finish + o.NewStruct(n, v)
+						finish = finish + o.NewStruct(n, v, n)
 					}
 				}
 			}

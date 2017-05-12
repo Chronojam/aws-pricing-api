@@ -28,17 +28,17 @@ type rawAmazonCloudFront_Term struct {
 
 func (l *AmazonCloudFront) UnmarshalJSON(data []byte) error {
 	var p rawAmazonCloudFront
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonCloudFront_Product{}
-	terms := []AmazonCloudFront_Term{}
+	products := []*AmazonCloudFront_Product{}
+	terms := []*AmazonCloudFront_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonCloudFront) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonCloudFront_Term_PriceDimensions{}
-				tAttributes := []AmazonCloudFront_Term_Attributes{}
+				pDimensions := []*AmazonCloudFront_Term_PriceDimensions{}
+				tAttributes := []*AmazonCloudFront_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonCloudFront) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonCloudFront_Term{
@@ -69,7 +69,7 @@ func (l *AmazonCloudFront) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,76 +91,62 @@ type AmazonCloudFront struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonCloudFront_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonCloudFront_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonCloudFront_Product `gorm:"ForeignKey:AmazonCloudFrontID"`
+	Terms		[]*AmazonCloudFront_Term`gorm:"ForeignKey:AmazonCloudFrontID"`
 }
 type AmazonCloudFront_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonCloudFrontID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonCloudFront_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonCloudFront_Product_Attributes	`gorm:"ForeignKey:AmazonCloudFront_Product_AttributesID"`
 }
 type AmazonCloudFront_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
+		AmazonCloudFront_Product_AttributesID	uint
 	Location	string
 	LocationType	string
 	Usagetype	string
 	Operation	string
 	RequestDescription	string
 	RequestType	string
+	Servicecode	string
 }
 
 type AmazonCloudFront_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonCloudFrontID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonCloudFront_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonCloudFront_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonCloudFront_Term_PriceDimensions `gorm:"ForeignKey:AmazonCloudFront_TermID"`
+	TermAttributes []*AmazonCloudFront_Term_Attributes `gorm:"ForeignKey:AmazonCloudFront_TermID"`
 }
 
 type AmazonCloudFront_Term_Attributes struct {
 	gorm.Model
+	AmazonCloudFront_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonCloudFront_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonCloudFront_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonCloudFront_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonCloudFront_Term_PricePerUnit `gorm:"ForeignKey:AmazonCloudFront_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonCloudFront_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonCloudFront_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonCloudFront) QueryProducts(q func(product AmazonCloudFront_Product) bool) []AmazonCloudFront_Product{
-	ret := []AmazonCloudFront_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonCloudFront) QueryTerms(t string, q func(product AmazonCloudFront_Term) bool) []AmazonCloudFront_Term{
-	ret := []AmazonCloudFront_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonCloudFront) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json"

@@ -28,17 +28,17 @@ type rawAmazonRDS_Term struct {
 
 func (l *AmazonRDS) UnmarshalJSON(data []byte) error {
 	var p rawAmazonRDS
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonRDS_Product{}
-	terms := []AmazonRDS_Term{}
+	products := []*AmazonRDS_Product{}
+	terms := []*AmazonRDS_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonRDS) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonRDS_Term_PriceDimensions{}
-				tAttributes := []AmazonRDS_Term_Attributes{}
+				pDimensions := []*AmazonRDS_Term_PriceDimensions{}
+				tAttributes := []*AmazonRDS_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonRDS) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonRDS_Term{
@@ -69,7 +69,7 @@ func (l *AmazonRDS) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,91 +91,74 @@ type AmazonRDS struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonRDS_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonRDS_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonRDS_Product `gorm:"ForeignKey:AmazonRDSID"`
+	Terms		[]*AmazonRDS_Term`gorm:"ForeignKey:AmazonRDSID"`
 }
 type AmazonRDS_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonRDSID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonRDS_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonRDS_Product_Attributes	`gorm:"ForeignKey:AmazonRDS_Product_AttributesID"`
 }
 type AmazonRDS_Product_Attributes struct {
 	gorm.Model
-		Vcpu	string
-	PhysicalProcessor	string
-	NetworkPerformance	string
-	EngineCode	string
-	LicenseModel	string
-	InstanceType	string
+		AmazonRDS_Product_AttributesID	uint
+	Servicecode	string
 	CurrentGeneration	string
 	InstanceFamily	string
-	ProcessorFeatures	string
+	Vcpu	string
 	Storage	string
-	DatabaseEngine	string
+	EngineCode	string
 	DatabaseEdition	string
-	Usagetype	string
-	EnhancedNetworkingSupported	string
-	Servicecode	string
-	Location	string
-	Memory	string
-	LocationType	string
-	ClockSpeed	string
-	ProcessorArchitecture	string
 	DeploymentOption	string
+	Usagetype	string
+	LocationType	string
+	Memory	string
+	NetworkPerformance	string
+	ProcessorArchitecture	string
 	Operation	string
+	InstanceType	string
+	DatabaseEngine	string
+	Location	string
+	PhysicalProcessor	string
+	LicenseModel	string
 }
 
 type AmazonRDS_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonRDSID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonRDS_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonRDS_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonRDS_Term_PriceDimensions `gorm:"ForeignKey:AmazonRDS_TermID"`
+	TermAttributes []*AmazonRDS_Term_Attributes `gorm:"ForeignKey:AmazonRDS_TermID"`
 }
 
 type AmazonRDS_Term_Attributes struct {
 	gorm.Model
+	AmazonRDS_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonRDS_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonRDS_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonRDS_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonRDS_Term_PricePerUnit `gorm:"ForeignKey:AmazonRDS_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonRDS_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonRDS_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonRDS) QueryProducts(q func(product AmazonRDS_Product) bool) []AmazonRDS_Product{
-	ret := []AmazonRDS_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonRDS) QueryTerms(t string, q func(product AmazonRDS_Term) bool) []AmazonRDS_Term{
-	ret := []AmazonRDS_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonRDS) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/index.json"

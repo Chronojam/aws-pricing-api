@@ -28,17 +28,17 @@ type rawAWSSupportEnterprise_Term struct {
 
 func (l *AWSSupportEnterprise) UnmarshalJSON(data []byte) error {
 	var p rawAWSSupportEnterprise
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSSupportEnterprise_Product{}
-	terms := []AWSSupportEnterprise_Term{}
+	products := []*AWSSupportEnterprise_Product{}
+	terms := []*AWSSupportEnterprise_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSSupportEnterprise) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSSupportEnterprise_Term_PriceDimensions{}
-				tAttributes := []AWSSupportEnterprise_Term_Attributes{}
+				pDimensions := []*AWSSupportEnterprise_Term_PriceDimensions{}
+				tAttributes := []*AWSSupportEnterprise_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSSupportEnterprise) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSSupportEnterprise_Term{
@@ -69,7 +69,7 @@ func (l *AWSSupportEnterprise) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,89 +91,75 @@ type AWSSupportEnterprise struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSSupportEnterprise_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSSupportEnterprise_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSSupportEnterprise_Product `gorm:"ForeignKey:AWSSupportEnterpriseID"`
+	Terms		[]*AWSSupportEnterprise_Term`gorm:"ForeignKey:AWSSupportEnterpriseID"`
 }
 type AWSSupportEnterprise_Product struct {
 	gorm.Model
-		Attributes	AWSSupportEnterprise_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+		AWSSupportEnterpriseID	uint
 	Sku	string
 	ProductFamily	string
+	Attributes	AWSSupportEnterprise_Product_Attributes	`gorm:"ForeignKey:AWSSupportEnterprise_Product_AttributesID"`
 }
 type AWSSupportEnterprise_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
-	OperationsSupport	string
-	CustomerServiceAndCommunities	string
-	IncludedServices	string
-	ProgrammaticCaseManagement	string
-	ThirdpartySoftwareSupport	string
-	ArchitectureSupport	string
-	LaunchSupport	string
-	Training	string
-	WhoCanOpenCases	string
-	BestPractices	string
-	CaseSeverityresponseTimes	string
-	Location	string
-	LocationType	string
-	Usagetype	string
-	Operation	string
-	AccountAssistance	string
+		AWSSupportEnterprise_Product_AttributesID	uint
+	Servicecode	string
 	ArchitecturalReview	string
+	BestPractices	string
 	ProactiveGuidance	string
+	Training	string
+	LocationType	string
+	Operation	string
+	ArchitectureSupport	string
+	CustomerServiceAndCommunities	string
+	ThirdpartySoftwareSupport	string
+	WhoCanOpenCases	string
+	Location	string
+	Usagetype	string
+	CaseSeverityresponseTimes	string
+	OperationsSupport	string
+	ProgrammaticCaseManagement	string
+	AccountAssistance	string
+	IncludedServices	string
+	LaunchSupport	string
 	TechnicalSupport	string
 }
 
 type AWSSupportEnterprise_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSSupportEnterpriseID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSSupportEnterprise_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSSupportEnterprise_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSSupportEnterprise_Term_PriceDimensions `gorm:"ForeignKey:AWSSupportEnterprise_TermID"`
+	TermAttributes []*AWSSupportEnterprise_Term_Attributes `gorm:"ForeignKey:AWSSupportEnterprise_TermID"`
 }
 
 type AWSSupportEnterprise_Term_Attributes struct {
 	gorm.Model
+	AWSSupportEnterprise_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSSupportEnterprise_Term_PriceDimensions struct {
 	gorm.Model
+	AWSSupportEnterprise_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSSupportEnterprise_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSSupportEnterprise_Term_PricePerUnit `gorm:"ForeignKey:AWSSupportEnterprise_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSSupportEnterprise_Term_PricePerUnit struct {
 	gorm.Model
+	AWSSupportEnterprise_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSSupportEnterprise) QueryProducts(q func(product AWSSupportEnterprise_Product) bool) []AWSSupportEnterprise_Product{
-	ret := []AWSSupportEnterprise_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSSupportEnterprise) QueryTerms(t string, q func(product AWSSupportEnterprise_Term) bool) []AWSSupportEnterprise_Term{
-	ret := []AWSSupportEnterprise_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSSupportEnterprise) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSSupportEnterprise/current/index.json"

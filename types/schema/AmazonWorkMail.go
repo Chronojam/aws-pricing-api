@@ -28,17 +28,17 @@ type rawAmazonWorkMail_Term struct {
 
 func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
 	var p rawAmazonWorkMail
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonWorkMail_Product{}
-	terms := []AmazonWorkMail_Term{}
+	products := []*AmazonWorkMail_Product{}
+	terms := []*AmazonWorkMail_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonWorkMail_Term_PriceDimensions{}
-				tAttributes := []AmazonWorkMail_Term_Attributes{}
+				pDimensions := []*AmazonWorkMail_Term_PriceDimensions{}
+				tAttributes := []*AmazonWorkMail_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonWorkMail_Term{
@@ -69,7 +69,7 @@ func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,18 +91,20 @@ type AmazonWorkMail struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonWorkMail_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonWorkMail_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonWorkMail_Product `gorm:"ForeignKey:AmazonWorkMailID"`
+	Terms		[]*AmazonWorkMail_Term`gorm:"ForeignKey:AmazonWorkMailID"`
 }
 type AmazonWorkMail_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonWorkMailID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonWorkMail_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonWorkMail_Product_Attributes	`gorm:"ForeignKey:AmazonWorkMail_Product_AttributesID"`
 }
 type AmazonWorkMail_Product_Attributes struct {
 	gorm.Model
-		MailboxStorage	string
+		AmazonWorkMail_Product_AttributesID	uint
+	MailboxStorage	string
 	Servicecode	string
 	Location	string
 	LocationType	string
@@ -114,53 +116,37 @@ type AmazonWorkMail_Product_Attributes struct {
 type AmazonWorkMail_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonWorkMailID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonWorkMail_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonWorkMail_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonWorkMail_Term_PriceDimensions `gorm:"ForeignKey:AmazonWorkMail_TermID"`
+	TermAttributes []*AmazonWorkMail_Term_Attributes `gorm:"ForeignKey:AmazonWorkMail_TermID"`
 }
 
 type AmazonWorkMail_Term_Attributes struct {
 	gorm.Model
+	AmazonWorkMail_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonWorkMail_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonWorkMail_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonWorkMail_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonWorkMail_Term_PricePerUnit `gorm:"ForeignKey:AmazonWorkMail_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonWorkMail_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonWorkMail_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonWorkMail) QueryProducts(q func(product AmazonWorkMail_Product) bool) []AmazonWorkMail_Product{
-	ret := []AmazonWorkMail_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonWorkMail) QueryTerms(t string, q func(product AmazonWorkMail_Term) bool) []AmazonWorkMail_Term{
-	ret := []AmazonWorkMail_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonWorkMail) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonWorkMail/current/index.json"

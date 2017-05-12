@@ -28,17 +28,17 @@ type rawAmazonKinesisAnalytics_Term struct {
 
 func (l *AmazonKinesisAnalytics) UnmarshalJSON(data []byte) error {
 	var p rawAmazonKinesisAnalytics
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AmazonKinesisAnalytics_Product{}
-	terms := []AmazonKinesisAnalytics_Term{}
+	products := []*AmazonKinesisAnalytics_Product{}
+	terms := []*AmazonKinesisAnalytics_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AmazonKinesisAnalytics) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AmazonKinesisAnalytics_Term_PriceDimensions{}
-				tAttributes := []AmazonKinesisAnalytics_Term_Attributes{}
+				pDimensions := []*AmazonKinesisAnalytics_Term_PriceDimensions{}
+				tAttributes := []*AmazonKinesisAnalytics_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AmazonKinesisAnalytics) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonKinesisAnalytics_Term{
@@ -69,7 +69,7 @@ func (l *AmazonKinesisAnalytics) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,75 +91,61 @@ type AmazonKinesisAnalytics struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AmazonKinesisAnalytics_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AmazonKinesisAnalytics_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AmazonKinesisAnalytics_Product `gorm:"ForeignKey:AmazonKinesisAnalyticsID"`
+	Terms		[]*AmazonKinesisAnalytics_Term`gorm:"ForeignKey:AmazonKinesisAnalyticsID"`
 }
 type AmazonKinesisAnalytics_Product struct {
 	gorm.Model
-		Sku	string
+		AmazonKinesisAnalyticsID	uint
+	Sku	string
 	ProductFamily	string
-	Attributes	AmazonKinesisAnalytics_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Attributes	AmazonKinesisAnalytics_Product_Attributes	`gorm:"ForeignKey:AmazonKinesisAnalytics_Product_AttributesID"`
 }
 type AmazonKinesisAnalytics_Product_Attributes struct {
 	gorm.Model
-		Operation	string
+		AmazonKinesisAnalytics_Product_AttributesID	uint
 	Servicecode	string
 	Description	string
 	Location	string
 	LocationType	string
 	Usagetype	string
+	Operation	string
 }
 
 type AmazonKinesisAnalytics_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AmazonKinesisAnalyticsID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AmazonKinesisAnalytics_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AmazonKinesisAnalytics_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AmazonKinesisAnalytics_Term_PriceDimensions `gorm:"ForeignKey:AmazonKinesisAnalytics_TermID"`
+	TermAttributes []*AmazonKinesisAnalytics_Term_Attributes `gorm:"ForeignKey:AmazonKinesisAnalytics_TermID"`
 }
 
 type AmazonKinesisAnalytics_Term_Attributes struct {
 	gorm.Model
+	AmazonKinesisAnalytics_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AmazonKinesisAnalytics_Term_PriceDimensions struct {
 	gorm.Model
+	AmazonKinesisAnalytics_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonKinesisAnalytics_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AmazonKinesisAnalytics_Term_PricePerUnit `gorm:"ForeignKey:AmazonKinesisAnalytics_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AmazonKinesisAnalytics_Term_PricePerUnit struct {
 	gorm.Model
+	AmazonKinesisAnalytics_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AmazonKinesisAnalytics) QueryProducts(q func(product AmazonKinesisAnalytics_Product) bool) []AmazonKinesisAnalytics_Product{
-	ret := []AmazonKinesisAnalytics_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AmazonKinesisAnalytics) QueryTerms(t string, q func(product AmazonKinesisAnalytics_Term) bool) []AmazonKinesisAnalytics_Term{
-	ret := []AmazonKinesisAnalytics_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AmazonKinesisAnalytics) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonKinesisAnalytics/current/index.json"

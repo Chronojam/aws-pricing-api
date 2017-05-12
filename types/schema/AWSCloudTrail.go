@@ -28,17 +28,17 @@ type rawAWSCloudTrail_Term struct {
 
 func (l *AWSCloudTrail) UnmarshalJSON(data []byte) error {
 	var p rawAWSCloudTrail
-	err := json.Unmarshal(data, p)
+	err := json.Unmarshal(data, &p)
 	if err != nil {
 		return err
 	}
 
-	products := []AWSCloudTrail_Product{}
-	terms := []AWSCloudTrail_Term{}
+	products := []*AWSCloudTrail_Product{}
+	terms := []*AWSCloudTrail_Term{}
 
 	// Convert from map to slice
 	for _, pr := range p.Products {
-		products = append(products, pr)
+		products = append(products, &pr)
 	}
 
 	for _, tenancy := range p.Terms {
@@ -46,11 +46,11 @@ func (l *AWSCloudTrail) UnmarshalJSON(data []byte) error {
 		for _, sku := range tenancy {
 			// Some junk SKU
 			for _, term := range sku {
-				pDimensions := []AWSCloudTrail_Term_PriceDimensions{}
-				tAttributes := []AWSCloudTrail_Term_Attributes{}
+				pDimensions := []*AWSCloudTrail_Term_PriceDimensions{}
+				tAttributes := []*AWSCloudTrail_Term_Attributes{}
 
 				for _, pd := range term.PriceDimensions {
-					pDimensions = append(pDimensions, pd)
+					pDimensions = append(pDimensions, &pd)
 				}
 
 				for key, value := range term.TermAttributes {
@@ -58,7 +58,7 @@ func (l *AWSCloudTrail) UnmarshalJSON(data []byte) error {
 						Key: key,
 						Value: value,
 					}
-					tAttributes = append(tAttributes, tr)
+					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSCloudTrail_Term{
@@ -69,7 +69,7 @@ func (l *AWSCloudTrail) UnmarshalJSON(data []byte) error {
 					PriceDimensions: pDimensions,
 				}
 
-				terms = append(terms, t)
+				terms = append(terms, &t)
 			}
 		}
 	}
@@ -91,74 +91,60 @@ type AWSCloudTrail struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	[]AWSCloudTrail_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	Terms		[]AWSCloudTrail_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Products	[]*AWSCloudTrail_Product `gorm:"ForeignKey:AWSCloudTrailID"`
+	Terms		[]*AWSCloudTrail_Term`gorm:"ForeignKey:AWSCloudTrailID"`
 }
 type AWSCloudTrail_Product struct {
 	gorm.Model
-		Sku	string
+		AWSCloudTrailID	uint
+	Attributes	AWSCloudTrail_Product_Attributes	`gorm:"ForeignKey:AWSCloudTrail_Product_AttributesID"`
+	Sku	string
 	ProductFamily	string
-	Attributes	AWSCloudTrail_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
 type AWSCloudTrail_Product_Attributes struct {
 	gorm.Model
-		Servicecode	string
+		AWSCloudTrail_Product_AttributesID	uint
+	Operation	string
+	Servicecode	string
 	Location	string
 	LocationType	string
 	Usagetype	string
-	Operation	string
 }
 
 type AWSCloudTrail_Term struct {
 	gorm.Model
 	OfferTermCode string
+	AWSCloudTrailID	uint
 	Sku	string
 	EffectiveDate string
-	PriceDimensions []AWSCloudTrail_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	TermAttributes []AWSCloudTrail_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	PriceDimensions []*AWSCloudTrail_Term_PriceDimensions `gorm:"ForeignKey:AWSCloudTrail_TermID"`
+	TermAttributes []*AWSCloudTrail_Term_Attributes `gorm:"ForeignKey:AWSCloudTrail_TermID"`
 }
 
 type AWSCloudTrail_Term_Attributes struct {
 	gorm.Model
+	AWSCloudTrail_TermID	uint
 	Key	string
 	Value	string
 }
 
 type AWSCloudTrail_Term_PriceDimensions struct {
 	gorm.Model
+	AWSCloudTrail_TermID	uint
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSCloudTrail_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
-	AppliesTo	[]interface{}
+	PricePerUnit	*AWSCloudTrail_Term_PricePerUnit `gorm:"ForeignKey:AWSCloudTrail_Term_PriceDimensionsID"`
+	// AppliesTo	[]string
 }
 
 type AWSCloudTrail_Term_PricePerUnit struct {
 	gorm.Model
+	AWSCloudTrail_Term_PriceDimensionsID	uint
 	USD	string
-}
-func (a AWSCloudTrail) QueryProducts(q func(product AWSCloudTrail_Product) bool) []AWSCloudTrail_Product{
-	ret := []AWSCloudTrail_Product{}
-	for _, v := range a.Products {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
-}
-func (a AWSCloudTrail) QueryTerms(t string, q func(product AWSCloudTrail_Term) bool) []AWSCloudTrail_Term{
-	ret := []AWSCloudTrail_Term{}
-	for _, v := range a.Terms {
-		if q(v) {
-			ret = append(ret, v)
-		}
-	}
-
-	return ret
 }
 func (a *AWSCloudTrail) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSCloudTrail/current/index.json"
