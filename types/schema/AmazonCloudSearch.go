@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonCloudSearch struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonCloudSearch_Product
+	Terms		map[string]map[string]map[string]rawAmazonCloudSearch_Term
+}
+
+
+type rawAmazonCloudSearch_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonCloudSearch_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonCloudSearch) UnmarshalJSON(data []byte) error {
+	var p rawAmazonCloudSearch
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonCloudSearch_Product{}
+	terms := []AmazonCloudSearch_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonCloudSearch_Term_PriceDimensions{}
+				tAttributes := []AmazonCloudSearch_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonCloudSearch_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonCloudSearch_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonCloudSearch struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,47 +91,57 @@ type AmazonCloudSearch struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonCloudSearch_Product
-	Terms		map[string]map[string]map[string]AmazonCloudSearch_Term
+	Products	[]AmazonCloudSearch_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonCloudSearch_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonCloudSearch_Product struct {	Attributes	AmazonCloudSearch_Product_Attributes
-	Sku	string
+type AmazonCloudSearch_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
+	Attributes	AmazonCloudSearch_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonCloudSearch_Product_Attributes struct {	Usagetype	string
+type AmazonCloudSearch_Product_Attributes struct {
+	gorm.Model
+		Usagetype	string
 	Operation	string
-	CloudSearchVersion	string
 	Servicecode	string
-	Location	string
-	LocationType	string
-	InstanceType	string
+	TransferType	string
+	FromLocation	string
+	FromLocationType	string
+	ToLocation	string
+	ToLocationType	string
 }
 
 type AmazonCloudSearch_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonCloudSearch_Term_PriceDimensions
-	TermAttributes AmazonCloudSearch_Term_TermAttributes
+	PriceDimensions []AmazonCloudSearch_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonCloudSearch_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonCloudSearch_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonCloudSearch_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonCloudSearch_Term_PricePerUnit
+	PricePerUnit	AmazonCloudSearch_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonCloudSearch_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonCloudSearch_Term_TermAttributes struct {
-
 }
 func (a AmazonCloudSearch) QueryProducts(q func(product AmazonCloudSearch_Product) bool) []AmazonCloudSearch_Product{
 	ret := []AmazonCloudSearch_Product{}
@@ -68,11 +155,9 @@ func (a AmazonCloudSearch) QueryProducts(q func(product AmazonCloudSearch_Produc
 }
 func (a AmazonCloudSearch) QueryTerms(t string, q func(product AmazonCloudSearch_Term) bool) []AmazonCloudSearch_Term{
 	ret := []AmazonCloudSearch_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

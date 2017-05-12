@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAWSDatabaseMigrationSvc struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AWSDatabaseMigrationSvc_Product
+	Terms		map[string]map[string]map[string]rawAWSDatabaseMigrationSvc_Term
+}
+
+
+type rawAWSDatabaseMigrationSvc_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AWSDatabaseMigrationSvc_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AWSDatabaseMigrationSvc) UnmarshalJSON(data []byte) error {
+	var p rawAWSDatabaseMigrationSvc
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AWSDatabaseMigrationSvc_Product{}
+	terms := []AWSDatabaseMigrationSvc_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AWSDatabaseMigrationSvc_Term_PriceDimensions{}
+				tAttributes := []AWSDatabaseMigrationSvc_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AWSDatabaseMigrationSvc_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AWSDatabaseMigrationSvc_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AWSDatabaseMigrationSvc struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,59 +91,57 @@ type AWSDatabaseMigrationSvc struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AWSDatabaseMigrationSvc_Product
-	Terms		map[string]map[string]map[string]AWSDatabaseMigrationSvc_Term
+	Products	[]AWSDatabaseMigrationSvc_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AWSDatabaseMigrationSvc_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AWSDatabaseMigrationSvc_Product struct {	Sku	string
+type AWSDatabaseMigrationSvc_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
-	Attributes	AWSDatabaseMigrationSvc_Product_Attributes
+	Attributes	AWSDatabaseMigrationSvc_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AWSDatabaseMigrationSvc_Product_Attributes struct {	Servicecode	string
-	LocationType	string
-	DedicatedEbsThroughput	string
-	Operation	string
-	AvailabilityZone	string
-	Location	string
-	CurrentGeneration	string
-	PhysicalProcessor	string
-	ClockSpeed	string
-	Storage	string
+type AWSDatabaseMigrationSvc_Product_Attributes struct {
+	gorm.Model
+		ToLocation	string
+	ToLocationType	string
 	Usagetype	string
-	EnhancedNetworkingSupported	string
-	Vcpu	string
-	NetworkPerformance	string
-	ProcessorFeatures	string
-	InstanceType	string
-	InstanceFamily	string
-	Memory	string
-	ProcessorArchitecture	string
+	Operation	string
+	Servicecode	string
+	TransferType	string
+	FromLocation	string
+	FromLocationType	string
 }
 
 type AWSDatabaseMigrationSvc_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AWSDatabaseMigrationSvc_Term_PriceDimensions
-	TermAttributes AWSDatabaseMigrationSvc_Term_TermAttributes
+	PriceDimensions []AWSDatabaseMigrationSvc_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AWSDatabaseMigrationSvc_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AWSDatabaseMigrationSvc_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AWSDatabaseMigrationSvc_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSDatabaseMigrationSvc_Term_PricePerUnit
+	PricePerUnit	AWSDatabaseMigrationSvc_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AWSDatabaseMigrationSvc_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AWSDatabaseMigrationSvc_Term_TermAttributes struct {
-
 }
 func (a AWSDatabaseMigrationSvc) QueryProducts(q func(product AWSDatabaseMigrationSvc_Product) bool) []AWSDatabaseMigrationSvc_Product{
 	ret := []AWSDatabaseMigrationSvc_Product{}
@@ -80,11 +155,9 @@ func (a AWSDatabaseMigrationSvc) QueryProducts(q func(product AWSDatabaseMigrati
 }
 func (a AWSDatabaseMigrationSvc) QueryTerms(t string, q func(product AWSDatabaseMigrationSvc_Term) bool) []AWSDatabaseMigrationSvc_Term{
 	ret := []AWSDatabaseMigrationSvc_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

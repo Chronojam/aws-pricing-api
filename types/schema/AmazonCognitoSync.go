@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonCognitoSync struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonCognitoSync_Product
+	Terms		map[string]map[string]map[string]rawAmazonCognitoSync_Term
+}
+
+
+type rawAmazonCognitoSync_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonCognitoSync_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonCognitoSync) UnmarshalJSON(data []byte) error {
+	var p rawAmazonCognitoSync
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonCognitoSync_Product{}
+	terms := []AmazonCognitoSync_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonCognitoSync_Term_PriceDimensions{}
+				tAttributes := []AmazonCognitoSync_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonCognitoSync_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonCognitoSync_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonCognitoSync struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,45 +91,54 @@ type AmazonCognitoSync struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonCognitoSync_Product
-	Terms		map[string]map[string]map[string]AmazonCognitoSync_Term
+	Products	[]AmazonCognitoSync_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonCognitoSync_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonCognitoSync_Product struct {	ProductFamily	string
-	Attributes	AmazonCognitoSync_Product_Attributes
-	Sku	string
+type AmazonCognitoSync_Product struct {
+	gorm.Model
+		Sku	string
+	ProductFamily	string
+	Attributes	AmazonCognitoSync_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonCognitoSync_Product_Attributes struct {	LocationType	string
+type AmazonCognitoSync_Product_Attributes struct {
+	gorm.Model
+		Servicecode	string
+	Location	string
+	LocationType	string
 	Usagetype	string
 	Operation	string
-	Servicecode	string
-	Location	string
 }
 
 type AmazonCognitoSync_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonCognitoSync_Term_PriceDimensions
-	TermAttributes AmazonCognitoSync_Term_TermAttributes
+	PriceDimensions []AmazonCognitoSync_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonCognitoSync_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonCognitoSync_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonCognitoSync_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonCognitoSync_Term_PricePerUnit
+	PricePerUnit	AmazonCognitoSync_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonCognitoSync_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonCognitoSync_Term_TermAttributes struct {
-
 }
 func (a AmazonCognitoSync) QueryProducts(q func(product AmazonCognitoSync_Product) bool) []AmazonCognitoSync_Product{
 	ret := []AmazonCognitoSync_Product{}
@@ -66,11 +152,9 @@ func (a AmazonCognitoSync) QueryProducts(q func(product AmazonCognitoSync_Produc
 }
 func (a AmazonCognitoSync) QueryTerms(t string, q func(product AmazonCognitoSync_Term) bool) []AmazonCognitoSync_Term{
 	ret := []AmazonCognitoSync_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

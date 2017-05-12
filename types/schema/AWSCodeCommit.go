@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAWSCodeCommit struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AWSCodeCommit_Product
+	Terms		map[string]map[string]map[string]rawAWSCodeCommit_Term
+}
+
+
+type rawAWSCodeCommit_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AWSCodeCommit_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
+	var p rawAWSCodeCommit
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AWSCodeCommit_Product{}
+	terms := []AWSCodeCommit_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AWSCodeCommit_Term_PriceDimensions{}
+				tAttributes := []AWSCodeCommit_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AWSCodeCommit_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AWSCodeCommit_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AWSCodeCommit struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,46 +91,55 @@ type AWSCodeCommit struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AWSCodeCommit_Product
-	Terms		map[string]map[string]map[string]AWSCodeCommit_Term
+	Products	[]AWSCodeCommit_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AWSCodeCommit_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AWSCodeCommit_Product struct {	Sku	string
+type AWSCodeCommit_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
-	Attributes	AWSCodeCommit_Product_Attributes
+	Attributes	AWSCodeCommit_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AWSCodeCommit_Product_Attributes struct {	Group	string
-	Usagetype	string
-	Operation	string
-	Servicecode	string
+type AWSCodeCommit_Product_Attributes struct {
+	gorm.Model
+		Servicecode	string
 	Location	string
 	LocationType	string
+	Group	string
+	Usagetype	string
+	Operation	string
 }
 
 type AWSCodeCommit_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AWSCodeCommit_Term_PriceDimensions
-	TermAttributes AWSCodeCommit_Term_TermAttributes
+	PriceDimensions []AWSCodeCommit_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AWSCodeCommit_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AWSCodeCommit_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AWSCodeCommit_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSCodeCommit_Term_PricePerUnit
+	PricePerUnit	AWSCodeCommit_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AWSCodeCommit_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AWSCodeCommit_Term_TermAttributes struct {
-
 }
 func (a AWSCodeCommit) QueryProducts(q func(product AWSCodeCommit_Product) bool) []AWSCodeCommit_Product{
 	ret := []AWSCodeCommit_Product{}
@@ -67,11 +153,9 @@ func (a AWSCodeCommit) QueryProducts(q func(product AWSCodeCommit_Product) bool)
 }
 func (a AWSCodeCommit) QueryTerms(t string, q func(product AWSCodeCommit_Term) bool) []AWSCodeCommit_Term{
 	ret := []AWSCodeCommit_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

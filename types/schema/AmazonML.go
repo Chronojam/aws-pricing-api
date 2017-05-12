@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonML struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonML_Product
+	Terms		map[string]map[string]map[string]rawAmazonML_Term
+}
+
+
+type rawAmazonML_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonML_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonML) UnmarshalJSON(data []byte) error {
+	var p rawAmazonML
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonML_Product{}
+	terms := []AmazonML_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonML_Term_PriceDimensions{}
+				tAttributes := []AmazonML_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonML_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonML_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonML struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,48 +91,57 @@ type AmazonML struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonML_Product
-	Terms		map[string]map[string]map[string]AmazonML_Term
+	Products	[]AmazonML_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonML_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonML_Product struct {	Sku	string
+type AmazonML_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
-	Attributes	AmazonML_Product_Attributes
+	Attributes	AmazonML_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonML_Product_Attributes struct {	LocationType	string
-	Group	string
+type AmazonML_Product_Attributes struct {
+	gorm.Model
+		Group	string
 	GroupDescription	string
 	Usagetype	string
 	Operation	string
 	MachineLearningProcess	string
 	Servicecode	string
 	Location	string
+	LocationType	string
 }
 
 type AmazonML_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonML_Term_PriceDimensions
-	TermAttributes AmazonML_Term_TermAttributes
+	PriceDimensions []AmazonML_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonML_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonML_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonML_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonML_Term_PricePerUnit
+	PricePerUnit	AmazonML_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonML_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonML_Term_TermAttributes struct {
-
 }
 func (a AmazonML) QueryProducts(q func(product AmazonML_Product) bool) []AmazonML_Product{
 	ret := []AmazonML_Product{}
@@ -69,11 +155,9 @@ func (a AmazonML) QueryProducts(q func(product AmazonML_Product) bool) []AmazonM
 }
 func (a AmazonML) QueryTerms(t string, q func(product AmazonML_Term) bool) []AmazonML_Term{
 	ret := []AmazonML_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

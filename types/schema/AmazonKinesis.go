@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonKinesis struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonKinesis_Product
+	Terms		map[string]map[string]map[string]rawAmazonKinesis_Term
+}
+
+
+type rawAmazonKinesis_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonKinesis_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonKinesis) UnmarshalJSON(data []byte) error {
+	var p rawAmazonKinesis
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonKinesis_Product{}
+	terms := []AmazonKinesis_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonKinesis_Term_PriceDimensions{}
+				tAttributes := []AmazonKinesis_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonKinesis_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonKinesis_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonKinesis struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,49 +91,58 @@ type AmazonKinesis struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonKinesis_Product
-	Terms		map[string]map[string]map[string]AmazonKinesis_Term
+	Products	[]AmazonKinesis_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonKinesis_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonKinesis_Product struct {	Attributes	AmazonKinesis_Product_Attributes
-	Sku	string
+type AmazonKinesis_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
+	Attributes	AmazonKinesis_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonKinesis_Product_Attributes struct {	LocationType	string
-	StandardStorageRetentionIncluded	string
+type AmazonKinesis_Product_Attributes struct {
+	gorm.Model
+		Servicecode	string
+	Group	string
 	Operation	string
 	MaximumExtendedStorage	string
-	Servicecode	string
+	StandardStorageRetentionIncluded	string
 	Location	string
-	Group	string
+	LocationType	string
 	GroupDescription	string
 	Usagetype	string
 }
 
 type AmazonKinesis_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonKinesis_Term_PriceDimensions
-	TermAttributes AmazonKinesis_Term_TermAttributes
+	PriceDimensions []AmazonKinesis_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonKinesis_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonKinesis_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonKinesis_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonKinesis_Term_PricePerUnit
+	PricePerUnit	AmazonKinesis_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonKinesis_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonKinesis_Term_TermAttributes struct {
-
 }
 func (a AmazonKinesis) QueryProducts(q func(product AmazonKinesis_Product) bool) []AmazonKinesis_Product{
 	ret := []AmazonKinesis_Product{}
@@ -70,11 +156,9 @@ func (a AmazonKinesis) QueryProducts(q func(product AmazonKinesis_Product) bool)
 }
 func (a AmazonKinesis) QueryTerms(t string, q func(product AmazonKinesis_Term) bool) []AmazonKinesis_Term{
 	ret := []AmazonKinesis_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

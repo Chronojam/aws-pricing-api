@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonLex struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonLex_Product
+	Terms		map[string]map[string]map[string]rawAmazonLex_Term
+}
+
+
+type rawAmazonLex_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonLex_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonLex) UnmarshalJSON(data []byte) error {
+	var p rawAmazonLex
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonLex_Product{}
+	terms := []AmazonLex_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonLex_Term_PriceDimensions{}
+				tAttributes := []AmazonLex_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonLex_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonLex_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonLex struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,50 +91,59 @@ type AmazonLex struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonLex_Product
-	Terms		map[string]map[string]map[string]AmazonLex_Term
+	Products	[]AmazonLex_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonLex_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonLex_Product struct {	Sku	string
+type AmazonLex_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
-	Attributes	AmazonLex_Product_Attributes
+	Attributes	AmazonLex_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonLex_Product_Attributes struct {	OutputMode	string
+type AmazonLex_Product_Attributes struct {
+	gorm.Model
+		GroupDescription	string
+	Usagetype	string
+	InputMode	string
+	OutputMode	string
+	SupportedModes	string
+	Servicecode	string
 	Location	string
 	LocationType	string
 	Group	string
 	Operation	string
-	SupportedModes	string
-	Servicecode	string
-	GroupDescription	string
-	Usagetype	string
-	InputMode	string
 }
 
 type AmazonLex_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonLex_Term_PriceDimensions
-	TermAttributes AmazonLex_Term_TermAttributes
+	PriceDimensions []AmazonLex_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonLex_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonLex_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonLex_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonLex_Term_PricePerUnit
+	PricePerUnit	AmazonLex_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonLex_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonLex_Term_TermAttributes struct {
-
 }
 func (a AmazonLex) QueryProducts(q func(product AmazonLex_Product) bool) []AmazonLex_Product{
 	ret := []AmazonLex_Product{}
@@ -71,11 +157,9 @@ func (a AmazonLex) QueryProducts(q func(product AmazonLex_Product) bool) []Amazo
 }
 func (a AmazonLex) QueryTerms(t string, q func(product AmazonLex_Term) bool) []AmazonLex_Term{
 	ret := []AmazonLex_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

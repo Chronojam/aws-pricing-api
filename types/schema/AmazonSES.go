@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonSES struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonSES_Product
+	Terms		map[string]map[string]map[string]rawAmazonSES_Term
+}
+
+
+type rawAmazonSES_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonSES_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonSES) UnmarshalJSON(data []byte) error {
+	var p rawAmazonSES
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonSES_Product{}
+	terms := []AmazonSES_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonSES_Term_PriceDimensions{}
+				tAttributes := []AmazonSES_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonSES_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonSES_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonSES struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,48 +91,57 @@ type AmazonSES struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonSES_Product
-	Terms		map[string]map[string]map[string]AmazonSES_Term
+	Products	[]AmazonSES_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonSES_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonSES_Product struct {	Attributes	AmazonSES_Product_Attributes
-	Sku	string
+type AmazonSES_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
+	Attributes	AmazonSES_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonSES_Product_Attributes struct {	ToLocation	string
-	ToLocationType	string
+type AmazonSES_Product_Attributes struct {
+	gorm.Model
+		Description	string
+	Location	string
+	LocationType	string
+	Origin	string
 	Usagetype	string
 	Operation	string
+	Recipient	string
 	Servicecode	string
-	TransferType	string
-	FromLocation	string
-	FromLocationType	string
 }
 
 type AmazonSES_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonSES_Term_PriceDimensions
-	TermAttributes AmazonSES_Term_TermAttributes
+	PriceDimensions []AmazonSES_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonSES_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonSES_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonSES_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonSES_Term_PricePerUnit
+	PricePerUnit	AmazonSES_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonSES_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonSES_Term_TermAttributes struct {
-
 }
 func (a AmazonSES) QueryProducts(q func(product AmazonSES_Product) bool) []AmazonSES_Product{
 	ret := []AmazonSES_Product{}
@@ -69,11 +155,9 @@ func (a AmazonSES) QueryProducts(q func(product AmazonSES_Product) bool) []Amazo
 }
 func (a AmazonSES) QueryTerms(t string, q func(product AmazonSES_Term) bool) []AmazonSES_Term{
 	ret := []AmazonSES_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

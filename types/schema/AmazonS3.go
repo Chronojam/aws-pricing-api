@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonS3 struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonS3_Product
+	Terms		map[string]map[string]map[string]rawAmazonS3_Term
+}
+
+
+type rawAmazonS3_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonS3_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonS3) UnmarshalJSON(data []byte) error {
+	var p rawAmazonS3
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonS3_Product{}
+	terms := []AmazonS3_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonS3_Term_PriceDimensions{}
+				tAttributes := []AmazonS3_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonS3_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonS3_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonS3 struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,48 +91,57 @@ type AmazonS3 struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonS3_Product
-	Terms		map[string]map[string]map[string]AmazonS3_Term
+	Products	[]AmazonS3_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonS3_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonS3_Product struct {	Sku	string
+type AmazonS3_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
-	Attributes	AmazonS3_Product_Attributes
+	Attributes	AmazonS3_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonS3_Product_Attributes struct {	Servicecode	string
-	TransferType	string
-	FromLocation	string
-	FromLocationType	string
+type AmazonS3_Product_Attributes struct {
+	gorm.Model
+		FromLocationType	string
 	ToLocation	string
 	ToLocationType	string
 	Usagetype	string
 	Operation	string
+	Servicecode	string
+	TransferType	string
+	FromLocation	string
 }
 
 type AmazonS3_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonS3_Term_PriceDimensions
-	TermAttributes AmazonS3_Term_TermAttributes
+	PriceDimensions []AmazonS3_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonS3_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonS3_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonS3_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonS3_Term_PricePerUnit
+	PricePerUnit	AmazonS3_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonS3_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonS3_Term_TermAttributes struct {
-
 }
 func (a AmazonS3) QueryProducts(q func(product AmazonS3_Product) bool) []AmazonS3_Product{
 	ret := []AmazonS3_Product{}
@@ -69,11 +155,9 @@ func (a AmazonS3) QueryProducts(q func(product AmazonS3_Product) bool) []AmazonS
 }
 func (a AmazonS3) QueryTerms(t string, q func(product AmazonS3_Term) bool) []AmazonS3_Term{
 	ret := []AmazonS3_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

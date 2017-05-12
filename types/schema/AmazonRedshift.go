@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAmazonRedshift struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AmazonRedshift_Product
+	Terms		map[string]map[string]map[string]rawAmazonRedshift_Term
+}
+
+
+type rawAmazonRedshift_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AmazonRedshift_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
+	var p rawAmazonRedshift
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AmazonRedshift_Product{}
+	terms := []AmazonRedshift_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AmazonRedshift_Term_PriceDimensions{}
+				tAttributes := []AmazonRedshift_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AmazonRedshift_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AmazonRedshift_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AmazonRedshift struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,48 +91,57 @@ type AmazonRedshift struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AmazonRedshift_Product
-	Terms		map[string]map[string]map[string]AmazonRedshift_Term
+	Products	[]AmazonRedshift_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AmazonRedshift_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonRedshift_Product struct {	Sku	string
+type AmazonRedshift_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
-	Attributes	AmazonRedshift_Product_Attributes
+	Attributes	AmazonRedshift_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AmazonRedshift_Product_Attributes struct {	Operation	string
-	Servicecode	string
-	TransferType	string
-	FromLocation	string
+type AmazonRedshift_Product_Attributes struct {
+	gorm.Model
+		FromLocation	string
 	FromLocationType	string
 	ToLocation	string
 	ToLocationType	string
 	Usagetype	string
+	Operation	string
+	Servicecode	string
+	TransferType	string
 }
 
 type AmazonRedshift_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AmazonRedshift_Term_PriceDimensions
-	TermAttributes AmazonRedshift_Term_TermAttributes
+	PriceDimensions []AmazonRedshift_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AmazonRedshift_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AmazonRedshift_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AmazonRedshift_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AmazonRedshift_Term_PricePerUnit
+	PricePerUnit	AmazonRedshift_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AmazonRedshift_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AmazonRedshift_Term_TermAttributes struct {
-
 }
 func (a AmazonRedshift) QueryProducts(q func(product AmazonRedshift_Product) bool) []AmazonRedshift_Product{
 	ret := []AmazonRedshift_Product{}
@@ -69,11 +155,9 @@ func (a AmazonRedshift) QueryProducts(q func(product AmazonRedshift_Product) boo
 }
 func (a AmazonRedshift) QueryTerms(t string, q func(product AmazonRedshift_Term) bool) []AmazonRedshift_Term{
 	ret := []AmazonRedshift_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 

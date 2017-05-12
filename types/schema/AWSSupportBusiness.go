@@ -7,6 +7,83 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+type rawAWSSupportBusiness struct {
+	FormatVersion	string
+	Disclaimer	string
+	OfferCode	string
+	Version		string
+	PublicationDate	string
+	Products	map[string]AWSSupportBusiness_Product
+	Terms		map[string]map[string]map[string]rawAWSSupportBusiness_Term
+}
+
+
+type rawAWSSupportBusiness_Term struct {
+	OfferTermCode string
+	Sku	string
+	EffectiveDate string
+	PriceDimensions map[string]AWSSupportBusiness_Term_PriceDimensions
+	TermAttributes map[string]string
+}
+
+func (l *AWSSupportBusiness) UnmarshalJSON(data []byte) error {
+	var p rawAWSSupportBusiness
+	err := json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	products := []AWSSupportBusiness_Product{}
+	terms := []AWSSupportBusiness_Term{}
+
+	// Convert from map to slice
+	for _, pr := range p.Products {
+		products = append(products, pr)
+	}
+
+	for _, tenancy := range p.Terms {
+		// OnDemand, etc.
+		for _, sku := range tenancy {
+			// Some junk SKU
+			for _, term := range sku {
+				pDimensions := []AWSSupportBusiness_Term_PriceDimensions{}
+				tAttributes := []AWSSupportBusiness_Term_Attributes{}
+
+				for _, pd := range term.PriceDimensions {
+					pDimensions = append(pDimensions, pd)
+				}
+
+				for key, value := range term.TermAttributes {
+					tr := AWSSupportBusiness_Term_Attributes{
+						Key: key,
+						Value: value,
+					}
+					tAttributes = append(tAttributes, tr)
+				}
+
+				t := AWSSupportBusiness_Term{
+					OfferTermCode: term.OfferTermCode,
+					Sku: term.Sku,
+					EffectiveDate: term.EffectiveDate,
+					TermAttributes: tAttributes,
+					PriceDimensions: pDimensions,
+				}
+
+				terms = append(terms, t)
+			}
+		}
+	}
+
+	l.FormatVersion = p.FormatVersion
+	l.Disclaimer = p.Disclaimer
+	l.OfferCode = p.OfferCode
+	l.Version = p.Version
+	l.PublicationDate = p.PublicationDate
+	l.Products = products
+	l.Terms = terms
+	return nil
+}
+
 type AWSSupportBusiness struct {
 	gorm.Model
 	FormatVersion	string
@@ -14,60 +91,69 @@ type AWSSupportBusiness struct {
 	OfferCode	string
 	Version		string
 	PublicationDate	string
-	Products	map[string]AWSSupportBusiness_Product
-	Terms		map[string]map[string]map[string]AWSSupportBusiness_Term
+	Products	[]AWSSupportBusiness_Product 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	Terms		[]AWSSupportBusiness_Term	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AWSSupportBusiness_Product struct {	Sku	string
+type AWSSupportBusiness_Product struct {
+	gorm.Model
+		Sku	string
 	ProductFamily	string
-	Attributes	AWSSupportBusiness_Product_Attributes
+	Attributes	AWSSupportBusiness_Product_Attributes	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 }
-type AWSSupportBusiness_Product_Attributes struct {	ArchitecturalReview	string
-	BestPractices	string
+type AWSSupportBusiness_Product_Attributes struct {
+	gorm.Model
+		Usagetype	string
+	CustomerServiceAndCommunities	string
 	ProgrammaticCaseManagement	string
 	ThirdpartySoftwareSupport	string
-	Training	string
-	WhoCanOpenCases	string
-	Servicecode	string
-	AccountAssistance	string
-	IncludedServices	string
-	LaunchSupport	string
-	OperationsSupport	string
-	TechnicalSupport	string
 	Location	string
-	Usagetype	string
-	Operation	string
-	CaseSeverityresponseTimes	string
 	LocationType	string
 	ArchitectureSupport	string
-	CustomerServiceAndCommunities	string
+	BestPractices	string
+	Servicecode	string
+	LaunchSupport	string
 	ProactiveGuidance	string
+	TechnicalSupport	string
+	OperationsSupport	string
+	Training	string
+	WhoCanOpenCases	string
+	Operation	string
+	AccountAssistance	string
+	ArchitecturalReview	string
+	CaseSeverityresponseTimes	string
+	IncludedServices	string
 }
 
 type AWSSupportBusiness_Term struct {
+	gorm.Model
 	OfferTermCode string
 	Sku	string
 	EffectiveDate string
-	PriceDimensions map[string]AWSSupportBusiness_Term_PriceDimensions
-	TermAttributes AWSSupportBusiness_Term_TermAttributes
+	PriceDimensions []AWSSupportBusiness_Term_PriceDimensions 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+	TermAttributes []AWSSupportBusiness_Term_Attributes 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
+}
+
+type AWSSupportBusiness_Term_Attributes struct {
+	gorm.Model
+	Key	string
+	Value	string
 }
 
 type AWSSupportBusiness_Term_PriceDimensions struct {
+	gorm.Model
 	RateCode	string
 	RateType	string
 	Description	string
 	BeginRange	string
 	EndRange	string
 	Unit	string
-	PricePerUnit	AWSSupportBusiness_Term_PricePerUnit
+	PricePerUnit	AWSSupportBusiness_Term_PricePerUnit 	`gorm:"ForeignKey:ID,type:varchar(255)[]"`
 	AppliesTo	[]interface{}
 }
 
 type AWSSupportBusiness_Term_PricePerUnit struct {
+	gorm.Model
 	USD	string
-}
-
-type AWSSupportBusiness_Term_TermAttributes struct {
-
 }
 func (a AWSSupportBusiness) QueryProducts(q func(product AWSSupportBusiness_Product) bool) []AWSSupportBusiness_Product{
 	ret := []AWSSupportBusiness_Product{}
@@ -81,11 +167,9 @@ func (a AWSSupportBusiness) QueryProducts(q func(product AWSSupportBusiness_Prod
 }
 func (a AWSSupportBusiness) QueryTerms(t string, q func(product AWSSupportBusiness_Term) bool) []AWSSupportBusiness_Term{
 	ret := []AWSSupportBusiness_Term{}
-	for _, v := range a.Terms[t] {
-		for _, val := range v {
-			if q(val) {
-				ret = append(ret, val)
-			}
+	for _, v := range a.Terms {
+		if q(v) {
+			ret = append(ret, v)
 		}
 	}
 
