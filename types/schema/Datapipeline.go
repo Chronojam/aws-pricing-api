@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawDatapipeline struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]Datapipeline_Product
-	Terms		map[string]map[string]map[string]rawDatapipeline_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]Datapipeline_Product
+	Terms           map[string]map[string]map[string]rawDatapipeline_Term
 }
 
-
 type rawDatapipeline_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]Datapipeline_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *Datapipeline) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *Datapipeline) UnmarshalJSON(data []byte) error {
 	terms := []*Datapipeline_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *Datapipeline) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := Datapipeline_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := Datapipeline_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,70 +86,71 @@ func (l *Datapipeline) UnmarshalJSON(data []byte) error {
 
 type Datapipeline struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*Datapipeline_Product `gorm:"ForeignKey:DatapipelineID"`
-	Terms		[]*Datapipeline_Term`gorm:"ForeignKey:DatapipelineID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*Datapipeline_Product `gorm:"ForeignKey:DatapipelineID"`
+	Terms           []*Datapipeline_Term    `gorm:"ForeignKey:DatapipelineID"`
 }
 type Datapipeline_Product struct {
 	gorm.Model
-		DatapipelineID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	Datapipeline_Product_Attributes	`gorm:"ForeignKey:Datapipeline_Product_AttributesID"`
+	DatapipelineID uint
+	Sku            string
+	ProductFamily  string
+	Attributes     Datapipeline_Product_Attributes `gorm:"ForeignKey:Datapipeline_Product_AttributesID"`
 }
 type Datapipeline_Product_Attributes struct {
 	gorm.Model
-		Datapipeline_Product_AttributesID	uint
-	Location	string
-	Usagetype	string
-	ExecutionFrequency	string
-	Servicecode	string
-	LocationType	string
-	Group	string
-	Operation	string
-	ExecutionLocation	string
-	FrequencyMode	string
+	Datapipeline_Product_AttributesID uint
+	Servicecode                       string
+	Location                          string
+	Group                             string
+	Usagetype                         string
+	ExecutionFrequency                string
+	ExecutionLocation                 string
+	FrequencyMode                     string
+	LocationType                      string
+	Operation                         string
 }
 
 type Datapipeline_Term struct {
 	gorm.Model
-	OfferTermCode string
-	DatapipelineID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	DatapipelineID  uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*Datapipeline_Term_PriceDimensions `gorm:"ForeignKey:Datapipeline_TermID"`
-	TermAttributes []*Datapipeline_Term_Attributes `gorm:"ForeignKey:Datapipeline_TermID"`
+	TermAttributes  []*Datapipeline_Term_Attributes      `gorm:"ForeignKey:Datapipeline_TermID"`
 }
 
 type Datapipeline_Term_Attributes struct {
 	gorm.Model
-	Datapipeline_TermID	uint
-	Key	string
-	Value	string
+	Datapipeline_TermID uint
+	Key                 string
+	Value               string
 }
 
 type Datapipeline_Term_PriceDimensions struct {
 	gorm.Model
-	Datapipeline_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*Datapipeline_Term_PricePerUnit `gorm:"ForeignKey:Datapipeline_Term_PriceDimensionsID"`
+	Datapipeline_TermID uint
+	RateCode            string
+	RateType            string
+	Description         string
+	BeginRange          string
+	EndRange            string
+	Unit                string
+	PricePerUnit        *Datapipeline_Term_PricePerUnit `gorm:"ForeignKey:Datapipeline_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type Datapipeline_Term_PricePerUnit struct {
 	gorm.Model
-	Datapipeline_Term_PriceDimensionsID	uint
-	USD	string
+	Datapipeline_Term_PriceDimensionsID uint
+	USD                                 string
 }
+
 func (a *Datapipeline) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/datapipeline/current/index.json"
 	resp, err := http.Get(url)

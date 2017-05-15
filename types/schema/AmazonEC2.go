@@ -36,7 +36,8 @@ func (l *AmazonEC2) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonEC2_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -103,29 +104,28 @@ type AmazonEC2_Product struct {
 type AmazonEC2_Product_Attributes struct {
 	gorm.Model
 	AmazonEC2_Product_AttributesID uint
-	Operation                      string
-	EnhancedNetworkingSupported    string
-	Location                       string
-	Vcpu                           string
-	PhysicalProcessor              string
-	Tenancy                        string
+	CurrentGeneration              string
 	LicenseModel                   string
-	Servicecode                    string
-	Memory                         string
+	EnhancedNetworkingSupported    string
+	PhysicalProcessor              string
+	ClockSpeed                     string
 	NetworkPerformance             string
-	Ecu                            string
-	PreInstalledSw                 string
-	OperatingSystem                string
+	ProcessorArchitecture          string
+	Operation                      string
+	DedicatedEbsThroughput         string
+	Tenancy                        string
+	ProcessorFeatures              string
+	Location                       string
 	LocationType                   string
 	InstanceType                   string
 	InstanceFamily                 string
+	Memory                         string
 	Storage                        string
-	ProcessorArchitecture          string
-	CurrentGeneration              string
-	ClockSpeed                     string
+	Servicecode                    string
+	Vcpu                           string
+	OperatingSystem                string
 	Usagetype                      string
-	DedicatedEbsThroughput         string
-	ProcessorFeatures              string
+	PreInstalledSw                 string
 }
 
 type AmazonEC2_Term struct {

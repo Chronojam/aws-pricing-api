@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonWorkMail struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonWorkMail_Product
-	Terms		map[string]map[string]map[string]rawAmazonWorkMail_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonWorkMail_Product
+	Terms           map[string]map[string]map[string]rawAmazonWorkMail_Term
 }
 
-
 type rawAmazonWorkMail_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonWorkMail_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonWorkMail_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonWorkMail_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonWorkMail_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,68 +86,69 @@ func (l *AmazonWorkMail) UnmarshalJSON(data []byte) error {
 
 type AmazonWorkMail struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonWorkMail_Product `gorm:"ForeignKey:AmazonWorkMailID"`
-	Terms		[]*AmazonWorkMail_Term`gorm:"ForeignKey:AmazonWorkMailID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonWorkMail_Product `gorm:"ForeignKey:AmazonWorkMailID"`
+	Terms           []*AmazonWorkMail_Term    `gorm:"ForeignKey:AmazonWorkMailID"`
 }
 type AmazonWorkMail_Product struct {
 	gorm.Model
-		AmazonWorkMailID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonWorkMail_Product_Attributes	`gorm:"ForeignKey:AmazonWorkMail_Product_AttributesID"`
+	AmazonWorkMailID uint
+	Sku              string
+	ProductFamily    string
+	Attributes       AmazonWorkMail_Product_Attributes `gorm:"ForeignKey:AmazonWorkMail_Product_AttributesID"`
 }
 type AmazonWorkMail_Product_Attributes struct {
 	gorm.Model
-		AmazonWorkMail_Product_AttributesID	uint
-	MailboxStorage	string
-	Servicecode	string
-	Location	string
-	LocationType	string
-	Usagetype	string
-	Operation	string
-	FreeTier	string
+	AmazonWorkMail_Product_AttributesID uint
+	Location                            string
+	LocationType                        string
+	Usagetype                           string
+	Operation                           string
+	FreeTier                            string
+	MailboxStorage                      string
+	Servicecode                         string
 }
 
 type AmazonWorkMail_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonWorkMailID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AmazonWorkMail_Term_PriceDimensions `gorm:"ForeignKey:AmazonWorkMail_TermID"`
-	TermAttributes []*AmazonWorkMail_Term_Attributes `gorm:"ForeignKey:AmazonWorkMail_TermID"`
+	OfferTermCode    string
+	AmazonWorkMailID uint
+	Sku              string
+	EffectiveDate    string
+	PriceDimensions  []*AmazonWorkMail_Term_PriceDimensions `gorm:"ForeignKey:AmazonWorkMail_TermID"`
+	TermAttributes   []*AmazonWorkMail_Term_Attributes      `gorm:"ForeignKey:AmazonWorkMail_TermID"`
 }
 
 type AmazonWorkMail_Term_Attributes struct {
 	gorm.Model
-	AmazonWorkMail_TermID	uint
-	Key	string
-	Value	string
+	AmazonWorkMail_TermID uint
+	Key                   string
+	Value                 string
 }
 
 type AmazonWorkMail_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonWorkMail_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonWorkMail_Term_PricePerUnit `gorm:"ForeignKey:AmazonWorkMail_Term_PriceDimensionsID"`
+	AmazonWorkMail_TermID uint
+	RateCode              string
+	RateType              string
+	Description           string
+	BeginRange            string
+	EndRange              string
+	Unit                  string
+	PricePerUnit          *AmazonWorkMail_Term_PricePerUnit `gorm:"ForeignKey:AmazonWorkMail_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonWorkMail_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonWorkMail_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonWorkMail_Term_PriceDimensionsID uint
+	USD                                   string
 }
+
 func (a *AmazonWorkMail) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonWorkMail/current/index.json"
 	resp, err := http.Get(url)

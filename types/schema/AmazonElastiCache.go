@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonElastiCache struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonElastiCache_Product
-	Terms		map[string]map[string]map[string]rawAmazonElastiCache_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonElastiCache_Product
+	Terms           map[string]map[string]map[string]rawAmazonElastiCache_Term
 }
 
-
 type rawAmazonElastiCache_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonElastiCache_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonElastiCache) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonElastiCache) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonElastiCache_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonElastiCache) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonElastiCache_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonElastiCache_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,73 +86,74 @@ func (l *AmazonElastiCache) UnmarshalJSON(data []byte) error {
 
 type AmazonElastiCache struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonElastiCache_Product `gorm:"ForeignKey:AmazonElastiCacheID"`
-	Terms		[]*AmazonElastiCache_Term`gorm:"ForeignKey:AmazonElastiCacheID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonElastiCache_Product `gorm:"ForeignKey:AmazonElastiCacheID"`
+	Terms           []*AmazonElastiCache_Term    `gorm:"ForeignKey:AmazonElastiCacheID"`
 }
 type AmazonElastiCache_Product struct {
 	gorm.Model
-		AmazonElastiCacheID	uint
-	ProductFamily	string
-	Attributes	AmazonElastiCache_Product_Attributes	`gorm:"ForeignKey:AmazonElastiCache_Product_AttributesID"`
-	Sku	string
+	AmazonElastiCacheID uint
+	ProductFamily       string
+	Attributes          AmazonElastiCache_Product_Attributes `gorm:"ForeignKey:AmazonElastiCache_Product_AttributesID"`
+	Sku                 string
 }
 type AmazonElastiCache_Product_Attributes struct {
 	gorm.Model
-		AmazonElastiCache_Product_AttributesID	uint
-	Operation	string
-	Location	string
-	InstanceType	string
-	CurrentGeneration	string
-	InstanceFamily	string
-	Vcpu	string
-	Usagetype	string
-	Servicecode	string
-	LocationType	string
-	Memory	string
-	NetworkPerformance	string
-	CacheEngine	string
+	AmazonElastiCache_Product_AttributesID uint
+	Location                               string
+	InstanceFamily                         string
+	Vcpu                                   string
+	NetworkPerformance                     string
+	CacheEngine                            string
+	Operation                              string
+	Servicecode                            string
+	InstanceType                           string
+	CurrentGeneration                      string
+	Memory                                 string
+	Usagetype                              string
+	LocationType                           string
 }
 
 type AmazonElastiCache_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonElastiCacheID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AmazonElastiCache_Term_PriceDimensions `gorm:"ForeignKey:AmazonElastiCache_TermID"`
-	TermAttributes []*AmazonElastiCache_Term_Attributes `gorm:"ForeignKey:AmazonElastiCache_TermID"`
+	OfferTermCode       string
+	AmazonElastiCacheID uint
+	Sku                 string
+	EffectiveDate       string
+	PriceDimensions     []*AmazonElastiCache_Term_PriceDimensions `gorm:"ForeignKey:AmazonElastiCache_TermID"`
+	TermAttributes      []*AmazonElastiCache_Term_Attributes      `gorm:"ForeignKey:AmazonElastiCache_TermID"`
 }
 
 type AmazonElastiCache_Term_Attributes struct {
 	gorm.Model
-	AmazonElastiCache_TermID	uint
-	Key	string
-	Value	string
+	AmazonElastiCache_TermID uint
+	Key                      string
+	Value                    string
 }
 
 type AmazonElastiCache_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonElastiCache_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonElastiCache_Term_PricePerUnit `gorm:"ForeignKey:AmazonElastiCache_Term_PriceDimensionsID"`
+	AmazonElastiCache_TermID uint
+	RateCode                 string
+	RateType                 string
+	Description              string
+	BeginRange               string
+	EndRange                 string
+	Unit                     string
+	PricePerUnit             *AmazonElastiCache_Term_PricePerUnit `gorm:"ForeignKey:AmazonElastiCache_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonElastiCache_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonElastiCache_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonElastiCache_Term_PriceDimensionsID uint
+	USD                                      string
 }
+
 func (a *AmazonElastiCache) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonElastiCache/current/index.json"
 	resp, err := http.Get(url)

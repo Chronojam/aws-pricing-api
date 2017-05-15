@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonApiGateway struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonApiGateway_Product
-	Terms		map[string]map[string]map[string]rawAmazonApiGateway_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonApiGateway_Product
+	Terms           map[string]map[string]map[string]rawAmazonApiGateway_Term
 }
 
-
 type rawAmazonApiGateway_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonApiGateway_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonApiGateway) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonApiGateway) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonApiGateway_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonApiGateway) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonApiGateway_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonApiGateway_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *AmazonApiGateway) UnmarshalJSON(data []byte) error {
 
 type AmazonApiGateway struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonApiGateway_Product `gorm:"ForeignKey:AmazonApiGatewayID"`
-	Terms		[]*AmazonApiGateway_Term`gorm:"ForeignKey:AmazonApiGatewayID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonApiGateway_Product `gorm:"ForeignKey:AmazonApiGatewayID"`
+	Terms           []*AmazonApiGateway_Term    `gorm:"ForeignKey:AmazonApiGatewayID"`
 }
 type AmazonApiGateway_Product struct {
 	gorm.Model
-		AmazonApiGatewayID	uint
-	Attributes	AmazonApiGateway_Product_Attributes	`gorm:"ForeignKey:AmazonApiGateway_Product_AttributesID"`
-	Sku	string
-	ProductFamily	string
+	AmazonApiGatewayID uint
+	Sku                string
+	ProductFamily      string
+	Attributes         AmazonApiGateway_Product_Attributes `gorm:"ForeignKey:AmazonApiGateway_Product_AttributesID"`
 }
 type AmazonApiGateway_Product_Attributes struct {
 	gorm.Model
-		AmazonApiGateway_Product_AttributesID	uint
-	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
-	Usagetype	string
-	Operation	string
-	Servicecode	string
-	TransferType	string
-	FromLocation	string
+	AmazonApiGateway_Product_AttributesID uint
+	Servicecode                           string
+	TransferType                          string
+	FromLocation                          string
+	FromLocationType                      string
+	ToLocation                            string
+	ToLocationType                        string
+	Usagetype                             string
+	Operation                             string
 }
 
 type AmazonApiGateway_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonApiGatewayID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AmazonApiGateway_Term_PriceDimensions `gorm:"ForeignKey:AmazonApiGateway_TermID"`
-	TermAttributes []*AmazonApiGateway_Term_Attributes `gorm:"ForeignKey:AmazonApiGateway_TermID"`
+	OfferTermCode      string
+	AmazonApiGatewayID uint
+	Sku                string
+	EffectiveDate      string
+	PriceDimensions    []*AmazonApiGateway_Term_PriceDimensions `gorm:"ForeignKey:AmazonApiGateway_TermID"`
+	TermAttributes     []*AmazonApiGateway_Term_Attributes      `gorm:"ForeignKey:AmazonApiGateway_TermID"`
 }
 
 type AmazonApiGateway_Term_Attributes struct {
 	gorm.Model
-	AmazonApiGateway_TermID	uint
-	Key	string
-	Value	string
+	AmazonApiGateway_TermID uint
+	Key                     string
+	Value                   string
 }
 
 type AmazonApiGateway_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonApiGateway_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonApiGateway_Term_PricePerUnit `gorm:"ForeignKey:AmazonApiGateway_Term_PriceDimensionsID"`
+	AmazonApiGateway_TermID uint
+	RateCode                string
+	RateType                string
+	Description             string
+	BeginRange              string
+	EndRange                string
+	Unit                    string
+	PricePerUnit            *AmazonApiGateway_Term_PricePerUnit `gorm:"ForeignKey:AmazonApiGateway_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonApiGateway_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonApiGateway_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonApiGateway_Term_PriceDimensionsID uint
+	USD                                     string
 }
+
 func (a *AmazonApiGateway) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonApiGateway/current/index.json"
 	resp, err := http.Get(url)

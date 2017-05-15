@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonCognitoSync struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonCognitoSync_Product
-	Terms		map[string]map[string]map[string]rawAmazonCognitoSync_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonCognitoSync_Product
+	Terms           map[string]map[string]map[string]rawAmazonCognitoSync_Term
 }
 
-
 type rawAmazonCognitoSync_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonCognitoSync_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonCognitoSync) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonCognitoSync) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonCognitoSync_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonCognitoSync) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonCognitoSync_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonCognitoSync_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,66 +86,67 @@ func (l *AmazonCognitoSync) UnmarshalJSON(data []byte) error {
 
 type AmazonCognitoSync struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonCognitoSync_Product `gorm:"ForeignKey:AmazonCognitoSyncID"`
-	Terms		[]*AmazonCognitoSync_Term`gorm:"ForeignKey:AmazonCognitoSyncID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonCognitoSync_Product `gorm:"ForeignKey:AmazonCognitoSyncID"`
+	Terms           []*AmazonCognitoSync_Term    `gorm:"ForeignKey:AmazonCognitoSyncID"`
 }
 type AmazonCognitoSync_Product struct {
 	gorm.Model
-		AmazonCognitoSyncID	uint
-	ProductFamily	string
-	Attributes	AmazonCognitoSync_Product_Attributes	`gorm:"ForeignKey:AmazonCognitoSync_Product_AttributesID"`
-	Sku	string
+	AmazonCognitoSyncID uint
+	Sku                 string
+	ProductFamily       string
+	Attributes          AmazonCognitoSync_Product_Attributes `gorm:"ForeignKey:AmazonCognitoSync_Product_AttributesID"`
 }
 type AmazonCognitoSync_Product_Attributes struct {
 	gorm.Model
-		AmazonCognitoSync_Product_AttributesID	uint
-	LocationType	string
-	Usagetype	string
-	Operation	string
-	Servicecode	string
-	Location	string
+	AmazonCognitoSync_Product_AttributesID uint
+	Servicecode                            string
+	Location                               string
+	LocationType                           string
+	Usagetype                              string
+	Operation                              string
 }
 
 type AmazonCognitoSync_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonCognitoSyncID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AmazonCognitoSync_Term_PriceDimensions `gorm:"ForeignKey:AmazonCognitoSync_TermID"`
-	TermAttributes []*AmazonCognitoSync_Term_Attributes `gorm:"ForeignKey:AmazonCognitoSync_TermID"`
+	OfferTermCode       string
+	AmazonCognitoSyncID uint
+	Sku                 string
+	EffectiveDate       string
+	PriceDimensions     []*AmazonCognitoSync_Term_PriceDimensions `gorm:"ForeignKey:AmazonCognitoSync_TermID"`
+	TermAttributes      []*AmazonCognitoSync_Term_Attributes      `gorm:"ForeignKey:AmazonCognitoSync_TermID"`
 }
 
 type AmazonCognitoSync_Term_Attributes struct {
 	gorm.Model
-	AmazonCognitoSync_TermID	uint
-	Key	string
-	Value	string
+	AmazonCognitoSync_TermID uint
+	Key                      string
+	Value                    string
 }
 
 type AmazonCognitoSync_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonCognitoSync_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonCognitoSync_Term_PricePerUnit `gorm:"ForeignKey:AmazonCognitoSync_Term_PriceDimensionsID"`
+	AmazonCognitoSync_TermID uint
+	RateCode                 string
+	RateType                 string
+	Description              string
+	BeginRange               string
+	EndRange                 string
+	Unit                     string
+	PricePerUnit             *AmazonCognitoSync_Term_PricePerUnit `gorm:"ForeignKey:AmazonCognitoSync_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonCognitoSync_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonCognitoSync_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonCognitoSync_Term_PriceDimensionsID uint
+	USD                                      string
 }
+
 func (a *AmazonCognitoSync) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCognitoSync/current/index.json"
 	resp, err := http.Get(url)

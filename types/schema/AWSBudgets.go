@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAWSBudgets struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AWSBudgets_Product
-	Terms		map[string]map[string]map[string]rawAWSBudgets_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AWSBudgets_Product
+	Terms           map[string]map[string]map[string]rawAWSBudgets_Term
 }
 
-
 type rawAWSBudgets_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AWSBudgets_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
 	terms := []*AWSBudgets_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AWSBudgets_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSBudgets_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,67 +86,68 @@ func (l *AWSBudgets) UnmarshalJSON(data []byte) error {
 
 type AWSBudgets struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AWSBudgets_Product `gorm:"ForeignKey:AWSBudgetsID"`
-	Terms		[]*AWSBudgets_Term`gorm:"ForeignKey:AWSBudgetsID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AWSBudgets_Product `gorm:"ForeignKey:AWSBudgetsID"`
+	Terms           []*AWSBudgets_Term    `gorm:"ForeignKey:AWSBudgetsID"`
 }
 type AWSBudgets_Product struct {
 	gorm.Model
-		AWSBudgetsID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AWSBudgets_Product_Attributes	`gorm:"ForeignKey:AWSBudgets_Product_AttributesID"`
+	AWSBudgetsID  uint
+	ProductFamily string
+	Attributes    AWSBudgets_Product_Attributes `gorm:"ForeignKey:AWSBudgets_Product_AttributesID"`
+	Sku           string
 }
 type AWSBudgets_Product_Attributes struct {
 	gorm.Model
-		AWSBudgets_Product_AttributesID	uint
-	GroupDescription	string
-	Usagetype	string
-	Operation	string
-	Servicecode	string
-	Location	string
-	LocationType	string
+	AWSBudgets_Product_AttributesID uint
+	LocationType                    string
+	GroupDescription                string
+	Usagetype                       string
+	Operation                       string
+	Servicecode                     string
+	Location                        string
 }
 
 type AWSBudgets_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AWSBudgetsID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AWSBudgetsID    uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AWSBudgets_Term_PriceDimensions `gorm:"ForeignKey:AWSBudgets_TermID"`
-	TermAttributes []*AWSBudgets_Term_Attributes `gorm:"ForeignKey:AWSBudgets_TermID"`
+	TermAttributes  []*AWSBudgets_Term_Attributes      `gorm:"ForeignKey:AWSBudgets_TermID"`
 }
 
 type AWSBudgets_Term_Attributes struct {
 	gorm.Model
-	AWSBudgets_TermID	uint
-	Key	string
-	Value	string
+	AWSBudgets_TermID uint
+	Key               string
+	Value             string
 }
 
 type AWSBudgets_Term_PriceDimensions struct {
 	gorm.Model
-	AWSBudgets_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AWSBudgets_Term_PricePerUnit `gorm:"ForeignKey:AWSBudgets_Term_PriceDimensionsID"`
+	AWSBudgets_TermID uint
+	RateCode          string
+	RateType          string
+	Description       string
+	BeginRange        string
+	EndRange          string
+	Unit              string
+	PricePerUnit      *AWSBudgets_Term_PricePerUnit `gorm:"ForeignKey:AWSBudgets_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AWSBudgets_Term_PricePerUnit struct {
 	gorm.Model
-	AWSBudgets_Term_PriceDimensionsID	uint
-	USD	string
+	AWSBudgets_Term_PriceDimensionsID uint
+	USD                               string
 }
+
 func (a *AWSBudgets) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSBudgets/current/index.json"
 	resp, err := http.Get(url)

@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAWSDeveloperSupport struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AWSDeveloperSupport_Product
-	Terms		map[string]map[string]map[string]rawAWSDeveloperSupport_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AWSDeveloperSupport_Product
+	Terms           map[string]map[string]map[string]rawAWSDeveloperSupport_Term
 }
 
-
 type rawAWSDeveloperSupport_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AWSDeveloperSupport_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AWSDeveloperSupport) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AWSDeveloperSupport) UnmarshalJSON(data []byte) error {
 	terms := []*AWSDeveloperSupport_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AWSDeveloperSupport) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AWSDeveloperSupport_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSDeveloperSupport_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,81 +86,82 @@ func (l *AWSDeveloperSupport) UnmarshalJSON(data []byte) error {
 
 type AWSDeveloperSupport struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AWSDeveloperSupport_Product `gorm:"ForeignKey:AWSDeveloperSupportID"`
-	Terms		[]*AWSDeveloperSupport_Term`gorm:"ForeignKey:AWSDeveloperSupportID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AWSDeveloperSupport_Product `gorm:"ForeignKey:AWSDeveloperSupportID"`
+	Terms           []*AWSDeveloperSupport_Term    `gorm:"ForeignKey:AWSDeveloperSupportID"`
 }
 type AWSDeveloperSupport_Product struct {
 	gorm.Model
-		AWSDeveloperSupportID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AWSDeveloperSupport_Product_Attributes	`gorm:"ForeignKey:AWSDeveloperSupport_Product_AttributesID"`
+	AWSDeveloperSupportID uint
+	Sku                   string
+	ProductFamily         string
+	Attributes            AWSDeveloperSupport_Product_Attributes `gorm:"ForeignKey:AWSDeveloperSupport_Product_AttributesID"`
 }
 type AWSDeveloperSupport_Product_Attributes struct {
 	gorm.Model
-		AWSDeveloperSupport_Product_AttributesID	uint
-	Usagetype	string
-	Operation	string
-	BestPractices	string
-	ProactiveGuidance	string
-	ProgrammaticCaseManagement	string
-	ArchitecturalReview	string
-	IncludedServices	string
-	LaunchSupport	string
-	Servicecode	string
-	Location	string
-	AccountAssistance	string
-	ArchitectureSupport	string
-	CaseSeverityresponseTimes	string
-	OperationsSupport	string
-	WhoCanOpenCases	string
-	LocationType	string
-	CustomerServiceAndCommunities	string
-	TechnicalSupport	string
-	ThirdpartySoftwareSupport	string
-	Training	string
+	AWSDeveloperSupport_Product_AttributesID uint
+	LocationType                             string
+	ArchitecturalReview                      string
+	OperationsSupport                        string
+	TechnicalSupport                         string
+	Servicecode                              string
+	ArchitectureSupport                      string
+	BestPractices                            string
+	Training                                 string
+	WhoCanOpenCases                          string
+	Location                                 string
+	Operation                                string
+	CustomerServiceAndCommunities            string
+	ProactiveGuidance                        string
+	ProgrammaticCaseManagement               string
+	ThirdpartySoftwareSupport                string
+	Usagetype                                string
+	AccountAssistance                        string
+	CaseSeverityresponseTimes                string
+	IncludedServices                         string
+	LaunchSupport                            string
 }
 
 type AWSDeveloperSupport_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AWSDeveloperSupportID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AWSDeveloperSupport_Term_PriceDimensions `gorm:"ForeignKey:AWSDeveloperSupport_TermID"`
-	TermAttributes []*AWSDeveloperSupport_Term_Attributes `gorm:"ForeignKey:AWSDeveloperSupport_TermID"`
+	OfferTermCode         string
+	AWSDeveloperSupportID uint
+	Sku                   string
+	EffectiveDate         string
+	PriceDimensions       []*AWSDeveloperSupport_Term_PriceDimensions `gorm:"ForeignKey:AWSDeveloperSupport_TermID"`
+	TermAttributes        []*AWSDeveloperSupport_Term_Attributes      `gorm:"ForeignKey:AWSDeveloperSupport_TermID"`
 }
 
 type AWSDeveloperSupport_Term_Attributes struct {
 	gorm.Model
-	AWSDeveloperSupport_TermID	uint
-	Key	string
-	Value	string
+	AWSDeveloperSupport_TermID uint
+	Key                        string
+	Value                      string
 }
 
 type AWSDeveloperSupport_Term_PriceDimensions struct {
 	gorm.Model
-	AWSDeveloperSupport_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AWSDeveloperSupport_Term_PricePerUnit `gorm:"ForeignKey:AWSDeveloperSupport_Term_PriceDimensionsID"`
+	AWSDeveloperSupport_TermID uint
+	RateCode                   string
+	RateType                   string
+	Description                string
+	BeginRange                 string
+	EndRange                   string
+	Unit                       string
+	PricePerUnit               *AWSDeveloperSupport_Term_PricePerUnit `gorm:"ForeignKey:AWSDeveloperSupport_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AWSDeveloperSupport_Term_PricePerUnit struct {
 	gorm.Model
-	AWSDeveloperSupport_Term_PriceDimensionsID	uint
-	USD	string
+	AWSDeveloperSupport_Term_PriceDimensionsID uint
+	USD                                        string
 }
+
 func (a *AWSDeveloperSupport) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSDeveloperSupport/current/index.json"
 	resp, err := http.Get(url)

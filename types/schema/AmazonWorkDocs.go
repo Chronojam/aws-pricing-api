@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonWorkDocs struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonWorkDocs_Product
-	Terms		map[string]map[string]map[string]rawAmazonWorkDocs_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonWorkDocs_Product
+	Terms           map[string]map[string]map[string]rawAmazonWorkDocs_Term
 }
 
-
 type rawAmazonWorkDocs_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonWorkDocs_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonWorkDocs) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonWorkDocs) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonWorkDocs_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonWorkDocs) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonWorkDocs_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonWorkDocs_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,71 +86,72 @@ func (l *AmazonWorkDocs) UnmarshalJSON(data []byte) error {
 
 type AmazonWorkDocs struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonWorkDocs_Product `gorm:"ForeignKey:AmazonWorkDocsID"`
-	Terms		[]*AmazonWorkDocs_Term`gorm:"ForeignKey:AmazonWorkDocsID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonWorkDocs_Product `gorm:"ForeignKey:AmazonWorkDocsID"`
+	Terms           []*AmazonWorkDocs_Term    `gorm:"ForeignKey:AmazonWorkDocsID"`
 }
 type AmazonWorkDocs_Product struct {
 	gorm.Model
-		AmazonWorkDocsID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonWorkDocs_Product_Attributes	`gorm:"ForeignKey:AmazonWorkDocs_Product_AttributesID"`
+	AmazonWorkDocsID uint
+	Sku              string
+	ProductFamily    string
+	Attributes       AmazonWorkDocs_Product_Attributes `gorm:"ForeignKey:AmazonWorkDocs_Product_AttributesID"`
 }
 type AmazonWorkDocs_Product_Attributes struct {
 	gorm.Model
-		AmazonWorkDocs_Product_AttributesID	uint
-	Servicecode	string
-	Location	string
-	Storage	string
-	MinimumStorageVolume	string
-	Description	string
-	LocationType	string
-	Usagetype	string
-	Operation	string
-	FreeTrial	string
-	MaximumStorageVolume	string
+	AmazonWorkDocs_Product_AttributesID uint
+	Description                         string
+	LocationType                        string
+	Storage                             string
+	Operation                           string
+	FreeTrial                           string
+	MaximumStorageVolume                string
+	Servicecode                         string
+	Location                            string
+	Usagetype                           string
+	MinimumStorageVolume                string
 }
 
 type AmazonWorkDocs_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonWorkDocsID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AmazonWorkDocs_Term_PriceDimensions `gorm:"ForeignKey:AmazonWorkDocs_TermID"`
-	TermAttributes []*AmazonWorkDocs_Term_Attributes `gorm:"ForeignKey:AmazonWorkDocs_TermID"`
+	OfferTermCode    string
+	AmazonWorkDocsID uint
+	Sku              string
+	EffectiveDate    string
+	PriceDimensions  []*AmazonWorkDocs_Term_PriceDimensions `gorm:"ForeignKey:AmazonWorkDocs_TermID"`
+	TermAttributes   []*AmazonWorkDocs_Term_Attributes      `gorm:"ForeignKey:AmazonWorkDocs_TermID"`
 }
 
 type AmazonWorkDocs_Term_Attributes struct {
 	gorm.Model
-	AmazonWorkDocs_TermID	uint
-	Key	string
-	Value	string
+	AmazonWorkDocs_TermID uint
+	Key                   string
+	Value                 string
 }
 
 type AmazonWorkDocs_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonWorkDocs_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonWorkDocs_Term_PricePerUnit `gorm:"ForeignKey:AmazonWorkDocs_Term_PriceDimensionsID"`
+	AmazonWorkDocs_TermID uint
+	RateCode              string
+	RateType              string
+	Description           string
+	BeginRange            string
+	EndRange              string
+	Unit                  string
+	PricePerUnit          *AmazonWorkDocs_Term_PricePerUnit `gorm:"ForeignKey:AmazonWorkDocs_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonWorkDocs_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonWorkDocs_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonWorkDocs_Term_PriceDimensionsID uint
+	USD                                   string
 }
+
 func (a *AmazonWorkDocs) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonWorkDocs/current/index.json"
 	resp, err := http.Get(url)

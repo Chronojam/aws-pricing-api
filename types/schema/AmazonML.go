@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonML struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonML_Product
-	Terms		map[string]map[string]map[string]rawAmazonML_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonML_Product
+	Terms           map[string]map[string]map[string]rawAmazonML_Term
 }
 
-
 type rawAmazonML_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonML_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonML) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonML) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonML_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonML) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonML_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonML_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *AmazonML) UnmarshalJSON(data []byte) error {
 
 type AmazonML struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonML_Product `gorm:"ForeignKey:AmazonMLID"`
-	Terms		[]*AmazonML_Term`gorm:"ForeignKey:AmazonMLID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonML_Product `gorm:"ForeignKey:AmazonMLID"`
+	Terms           []*AmazonML_Term    `gorm:"ForeignKey:AmazonMLID"`
 }
 type AmazonML_Product struct {
 	gorm.Model
-		AmazonMLID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonML_Product_Attributes	`gorm:"ForeignKey:AmazonML_Product_AttributesID"`
+	AmazonMLID    uint
+	Sku           string
+	ProductFamily string
+	Attributes    AmazonML_Product_Attributes `gorm:"ForeignKey:AmazonML_Product_AttributesID"`
 }
 type AmazonML_Product_Attributes struct {
 	gorm.Model
-		AmazonML_Product_AttributesID	uint
-	Operation	string
-	MachineLearningProcess	string
-	Servicecode	string
-	Location	string
-	LocationType	string
-	Group	string
-	GroupDescription	string
-	Usagetype	string
+	AmazonML_Product_AttributesID uint
+	MachineLearningProcess        string
+	Servicecode                   string
+	Location                      string
+	LocationType                  string
+	Group                         string
+	GroupDescription              string
+	Usagetype                     string
+	Operation                     string
 }
 
 type AmazonML_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonMLID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AmazonMLID      uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AmazonML_Term_PriceDimensions `gorm:"ForeignKey:AmazonML_TermID"`
-	TermAttributes []*AmazonML_Term_Attributes `gorm:"ForeignKey:AmazonML_TermID"`
+	TermAttributes  []*AmazonML_Term_Attributes      `gorm:"ForeignKey:AmazonML_TermID"`
 }
 
 type AmazonML_Term_Attributes struct {
 	gorm.Model
-	AmazonML_TermID	uint
-	Key	string
-	Value	string
+	AmazonML_TermID uint
+	Key             string
+	Value           string
 }
 
 type AmazonML_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonML_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonML_Term_PricePerUnit `gorm:"ForeignKey:AmazonML_Term_PriceDimensionsID"`
+	AmazonML_TermID uint
+	RateCode        string
+	RateType        string
+	Description     string
+	BeginRange      string
+	EndRange        string
+	Unit            string
+	PricePerUnit    *AmazonML_Term_PricePerUnit `gorm:"ForeignKey:AmazonML_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonML_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonML_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonML_Term_PriceDimensionsID uint
+	USD                             string
 }
+
 func (a *AmazonML) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonML/current/index.json"
 	resp, err := http.Get(url)

@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonCognito struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonCognito_Product
-	Terms		map[string]map[string]map[string]rawAmazonCognito_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonCognito_Product
+	Terms           map[string]map[string]map[string]rawAmazonCognito_Term
 }
 
-
 type rawAmazonCognito_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonCognito_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonCognito) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonCognito) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonCognito_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonCognito) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonCognito_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonCognito_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,66 +86,67 @@ func (l *AmazonCognito) UnmarshalJSON(data []byte) error {
 
 type AmazonCognito struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonCognito_Product `gorm:"ForeignKey:AmazonCognitoID"`
-	Terms		[]*AmazonCognito_Term`gorm:"ForeignKey:AmazonCognitoID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonCognito_Product `gorm:"ForeignKey:AmazonCognitoID"`
+	Terms           []*AmazonCognito_Term    `gorm:"ForeignKey:AmazonCognitoID"`
 }
 type AmazonCognito_Product struct {
 	gorm.Model
-		AmazonCognitoID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonCognito_Product_Attributes	`gorm:"ForeignKey:AmazonCognito_Product_AttributesID"`
+	AmazonCognitoID uint
+	Sku             string
+	ProductFamily   string
+	Attributes      AmazonCognito_Product_Attributes `gorm:"ForeignKey:AmazonCognito_Product_AttributesID"`
 }
 type AmazonCognito_Product_Attributes struct {
 	gorm.Model
-		AmazonCognito_Product_AttributesID	uint
-	Servicecode	string
-	Location	string
-	LocationType	string
-	Usagetype	string
-	Operation	string
+	AmazonCognito_Product_AttributesID uint
+	Usagetype                          string
+	Operation                          string
+	Servicecode                        string
+	Location                           string
+	LocationType                       string
 }
 
 type AmazonCognito_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonCognitoID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AmazonCognitoID uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AmazonCognito_Term_PriceDimensions `gorm:"ForeignKey:AmazonCognito_TermID"`
-	TermAttributes []*AmazonCognito_Term_Attributes `gorm:"ForeignKey:AmazonCognito_TermID"`
+	TermAttributes  []*AmazonCognito_Term_Attributes      `gorm:"ForeignKey:AmazonCognito_TermID"`
 }
 
 type AmazonCognito_Term_Attributes struct {
 	gorm.Model
-	AmazonCognito_TermID	uint
-	Key	string
-	Value	string
+	AmazonCognito_TermID uint
+	Key                  string
+	Value                string
 }
 
 type AmazonCognito_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonCognito_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonCognito_Term_PricePerUnit `gorm:"ForeignKey:AmazonCognito_Term_PriceDimensionsID"`
+	AmazonCognito_TermID uint
+	RateCode             string
+	RateType             string
+	Description          string
+	BeginRange           string
+	EndRange             string
+	Unit                 string
+	PricePerUnit         *AmazonCognito_Term_PricePerUnit `gorm:"ForeignKey:AmazonCognito_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonCognito_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonCognito_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonCognito_Term_PriceDimensionsID uint
+	USD                                  string
 }
+
 func (a *AmazonCognito) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCognito/current/index.json"
 	resp, err := http.Get(url)

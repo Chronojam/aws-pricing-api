@@ -123,7 +123,8 @@ func (l *%s) UnmarshalJSON(data []byte) error {
 	terms := []*%s_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 

@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonRedshift struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonRedshift_Product
-	Terms		map[string]map[string]map[string]rawAmazonRedshift_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonRedshift_Product
+	Terms           map[string]map[string]map[string]rawAmazonRedshift_Term
 }
 
-
 type rawAmazonRedshift_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonRedshift_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonRedshift_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonRedshift_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonRedshift_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *AmazonRedshift) UnmarshalJSON(data []byte) error {
 
 type AmazonRedshift struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonRedshift_Product `gorm:"ForeignKey:AmazonRedshiftID"`
-	Terms		[]*AmazonRedshift_Term`gorm:"ForeignKey:AmazonRedshiftID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonRedshift_Product `gorm:"ForeignKey:AmazonRedshiftID"`
+	Terms           []*AmazonRedshift_Term    `gorm:"ForeignKey:AmazonRedshiftID"`
 }
 type AmazonRedshift_Product struct {
 	gorm.Model
-		AmazonRedshiftID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonRedshift_Product_Attributes	`gorm:"ForeignKey:AmazonRedshift_Product_AttributesID"`
+	AmazonRedshiftID uint
+	Sku              string
+	ProductFamily    string
+	Attributes       AmazonRedshift_Product_Attributes `gorm:"ForeignKey:AmazonRedshift_Product_AttributesID"`
 }
 type AmazonRedshift_Product_Attributes struct {
 	gorm.Model
-		AmazonRedshift_Product_AttributesID	uint
-	Servicecode	string
-	TransferType	string
-	FromLocation	string
-	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
-	Usagetype	string
-	Operation	string
+	AmazonRedshift_Product_AttributesID uint
+	Usagetype                           string
+	Operation                           string
+	Servicecode                         string
+	TransferType                        string
+	FromLocation                        string
+	FromLocationType                    string
+	ToLocation                          string
+	ToLocationType                      string
 }
 
 type AmazonRedshift_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonRedshiftID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AmazonRedshift_Term_PriceDimensions `gorm:"ForeignKey:AmazonRedshift_TermID"`
-	TermAttributes []*AmazonRedshift_Term_Attributes `gorm:"ForeignKey:AmazonRedshift_TermID"`
+	OfferTermCode    string
+	AmazonRedshiftID uint
+	Sku              string
+	EffectiveDate    string
+	PriceDimensions  []*AmazonRedshift_Term_PriceDimensions `gorm:"ForeignKey:AmazonRedshift_TermID"`
+	TermAttributes   []*AmazonRedshift_Term_Attributes      `gorm:"ForeignKey:AmazonRedshift_TermID"`
 }
 
 type AmazonRedshift_Term_Attributes struct {
 	gorm.Model
-	AmazonRedshift_TermID	uint
-	Key	string
-	Value	string
+	AmazonRedshift_TermID uint
+	Key                   string
+	Value                 string
 }
 
 type AmazonRedshift_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonRedshift_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonRedshift_Term_PricePerUnit `gorm:"ForeignKey:AmazonRedshift_Term_PriceDimensionsID"`
+	AmazonRedshift_TermID uint
+	RateCode              string
+	RateType              string
+	Description           string
+	BeginRange            string
+	EndRange              string
+	Unit                  string
+	PricePerUnit          *AmazonRedshift_Term_PricePerUnit `gorm:"ForeignKey:AmazonRedshift_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonRedshift_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonRedshift_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonRedshift_Term_PriceDimensionsID uint
+	USD                                   string
 }
+
 func (a *AmazonRedshift) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRedshift/current/index.json"
 	resp, err := http.Get(url)

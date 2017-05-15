@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAWSIoT struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AWSIoT_Product
-	Terms		map[string]map[string]map[string]rawAWSIoT_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AWSIoT_Product
+	Terms           map[string]map[string]map[string]rawAWSIoT_Term
 }
 
-
 type rawAWSIoT_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AWSIoT_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AWSIoT) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AWSIoT) UnmarshalJSON(data []byte) error {
 	terms := []*AWSIoT_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AWSIoT) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AWSIoT_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSIoT_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *AWSIoT) UnmarshalJSON(data []byte) error {
 
 type AWSIoT struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AWSIoT_Product `gorm:"ForeignKey:AWSIoTID"`
-	Terms		[]*AWSIoT_Term`gorm:"ForeignKey:AWSIoTID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AWSIoT_Product `gorm:"ForeignKey:AWSIoTID"`
+	Terms           []*AWSIoT_Term    `gorm:"ForeignKey:AWSIoTID"`
 }
 type AWSIoT_Product struct {
 	gorm.Model
-		AWSIoTID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AWSIoT_Product_Attributes	`gorm:"ForeignKey:AWSIoT_Product_AttributesID"`
+	AWSIoTID      uint
+	Attributes    AWSIoT_Product_Attributes `gorm:"ForeignKey:AWSIoT_Product_AttributesID"`
+	Sku           string
+	ProductFamily string
 }
 type AWSIoT_Product_Attributes struct {
 	gorm.Model
-		AWSIoT_Product_AttributesID	uint
-	Location	string
-	LocationType	string
-	Usagetype	string
-	Operation	string
-	Isshadow	string
-	Iswebsocket	string
-	Protocol	string
-	Servicecode	string
+	AWSIoT_Product_AttributesID uint
+	Operation                   string
+	Isshadow                    string
+	Iswebsocket                 string
+	Protocol                    string
+	Servicecode                 string
+	Location                    string
+	LocationType                string
+	Usagetype                   string
 }
 
 type AWSIoT_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AWSIoTID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AWSIoTID        uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AWSIoT_Term_PriceDimensions `gorm:"ForeignKey:AWSIoT_TermID"`
-	TermAttributes []*AWSIoT_Term_Attributes `gorm:"ForeignKey:AWSIoT_TermID"`
+	TermAttributes  []*AWSIoT_Term_Attributes      `gorm:"ForeignKey:AWSIoT_TermID"`
 }
 
 type AWSIoT_Term_Attributes struct {
 	gorm.Model
-	AWSIoT_TermID	uint
-	Key	string
-	Value	string
+	AWSIoT_TermID uint
+	Key           string
+	Value         string
 }
 
 type AWSIoT_Term_PriceDimensions struct {
 	gorm.Model
-	AWSIoT_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AWSIoT_Term_PricePerUnit `gorm:"ForeignKey:AWSIoT_Term_PriceDimensionsID"`
+	AWSIoT_TermID uint
+	RateCode      string
+	RateType      string
+	Description   string
+	BeginRange    string
+	EndRange      string
+	Unit          string
+	PricePerUnit  *AWSIoT_Term_PricePerUnit `gorm:"ForeignKey:AWSIoT_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AWSIoT_Term_PricePerUnit struct {
 	gorm.Model
-	AWSIoT_Term_PriceDimensionsID	uint
-	USD	string
+	AWSIoT_Term_PriceDimensionsID uint
+	USD                           string
 }
+
 func (a *AWSIoT) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSIoT/current/index.json"
 	resp, err := http.Get(url)

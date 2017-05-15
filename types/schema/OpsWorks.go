@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawOpsWorks struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]OpsWorks_Product
-	Terms		map[string]map[string]map[string]rawOpsWorks_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]OpsWorks_Product
+	Terms           map[string]map[string]map[string]rawOpsWorks_Term
 }
 
-
 type rawOpsWorks_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]OpsWorks_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *OpsWorks) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *OpsWorks) UnmarshalJSON(data []byte) error {
 	terms := []*OpsWorks_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *OpsWorks) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := OpsWorks_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := OpsWorks_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,68 +86,69 @@ func (l *OpsWorks) UnmarshalJSON(data []byte) error {
 
 type OpsWorks struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*OpsWorks_Product `gorm:"ForeignKey:OpsWorksID"`
-	Terms		[]*OpsWorks_Term`gorm:"ForeignKey:OpsWorksID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*OpsWorks_Product `gorm:"ForeignKey:OpsWorksID"`
+	Terms           []*OpsWorks_Term    `gorm:"ForeignKey:OpsWorksID"`
 }
 type OpsWorks_Product struct {
 	gorm.Model
-		OpsWorksID	uint
-	ProductFamily	string
-	Attributes	OpsWorks_Product_Attributes	`gorm:"ForeignKey:OpsWorks_Product_AttributesID"`
-	Sku	string
+	OpsWorksID    uint
+	Sku           string
+	ProductFamily string
+	Attributes    OpsWorks_Product_Attributes `gorm:"ForeignKey:OpsWorks_Product_AttributesID"`
 }
 type OpsWorks_Product_Attributes struct {
 	gorm.Model
-		OpsWorks_Product_AttributesID	uint
-	LocationType	string
-	Group	string
-	Usagetype	string
-	Operation	string
-	ServerLocation	string
-	Servicecode	string
-	Location	string
+	OpsWorks_Product_AttributesID uint
+	Servicecode                   string
+	Location                      string
+	LocationType                  string
+	Group                         string
+	Usagetype                     string
+	Operation                     string
+	ServerLocation                string
 }
 
 type OpsWorks_Term struct {
 	gorm.Model
-	OfferTermCode string
-	OpsWorksID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	OpsWorksID      uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*OpsWorks_Term_PriceDimensions `gorm:"ForeignKey:OpsWorks_TermID"`
-	TermAttributes []*OpsWorks_Term_Attributes `gorm:"ForeignKey:OpsWorks_TermID"`
+	TermAttributes  []*OpsWorks_Term_Attributes      `gorm:"ForeignKey:OpsWorks_TermID"`
 }
 
 type OpsWorks_Term_Attributes struct {
 	gorm.Model
-	OpsWorks_TermID	uint
-	Key	string
-	Value	string
+	OpsWorks_TermID uint
+	Key             string
+	Value           string
 }
 
 type OpsWorks_Term_PriceDimensions struct {
 	gorm.Model
-	OpsWorks_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*OpsWorks_Term_PricePerUnit `gorm:"ForeignKey:OpsWorks_Term_PriceDimensionsID"`
+	OpsWorks_TermID uint
+	RateCode        string
+	RateType        string
+	Description     string
+	BeginRange      string
+	EndRange        string
+	Unit            string
+	PricePerUnit    *OpsWorks_Term_PricePerUnit `gorm:"ForeignKey:OpsWorks_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type OpsWorks_Term_PricePerUnit struct {
 	gorm.Model
-	OpsWorks_Term_PriceDimensionsID	uint
-	USD	string
+	OpsWorks_Term_PriceDimensionsID uint
+	USD                             string
 }
+
 func (a *OpsWorks) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/OpsWorks/current/index.json"
 	resp, err := http.Get(url)

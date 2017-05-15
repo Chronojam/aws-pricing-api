@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonKinesis struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonKinesis_Product
-	Terms		map[string]map[string]map[string]rawAmazonKinesis_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonKinesis_Product
+	Terms           map[string]map[string]map[string]rawAmazonKinesis_Term
 }
 
-
 type rawAmazonKinesis_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonKinesis_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonKinesis) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonKinesis) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonKinesis_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonKinesis) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonKinesis_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonKinesis_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,68 +86,71 @@ func (l *AmazonKinesis) UnmarshalJSON(data []byte) error {
 
 type AmazonKinesis struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonKinesis_Product `gorm:"ForeignKey:AmazonKinesisID"`
-	Terms		[]*AmazonKinesis_Term`gorm:"ForeignKey:AmazonKinesisID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonKinesis_Product `gorm:"ForeignKey:AmazonKinesisID"`
+	Terms           []*AmazonKinesis_Term    `gorm:"ForeignKey:AmazonKinesisID"`
 }
 type AmazonKinesis_Product struct {
 	gorm.Model
-		AmazonKinesisID	uint
-	ProductFamily	string
-	Attributes	AmazonKinesis_Product_Attributes	`gorm:"ForeignKey:AmazonKinesis_Product_AttributesID"`
-	Sku	string
+	AmazonKinesisID uint
+	Sku             string
+	ProductFamily   string
+	Attributes      AmazonKinesis_Product_Attributes `gorm:"ForeignKey:AmazonKinesis_Product_AttributesID"`
 }
 type AmazonKinesis_Product_Attributes struct {
 	gorm.Model
-		AmazonKinesis_Product_AttributesID	uint
-	Usagetype	string
-	Operation	string
-	Servicecode	string
-	Location	string
-	LocationType	string
-	Group	string
-	GroupDescription	string
+	AmazonKinesis_Product_AttributesID uint
+	Servicecode                        string
+	Location                           string
+	LocationType                       string
+	Group                              string
+	StandardStorageRetentionIncluded   string
+	GroupDescription                   string
+	Usagetype                          string
+	Operation                          string
+	MaximumExtendedStorage             string
 }
 
 type AmazonKinesis_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonKinesisID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AmazonKinesisID uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AmazonKinesis_Term_PriceDimensions `gorm:"ForeignKey:AmazonKinesis_TermID"`
-	TermAttributes []*AmazonKinesis_Term_Attributes `gorm:"ForeignKey:AmazonKinesis_TermID"`
+	TermAttributes  []*AmazonKinesis_Term_Attributes      `gorm:"ForeignKey:AmazonKinesis_TermID"`
 }
 
 type AmazonKinesis_Term_Attributes struct {
 	gorm.Model
-	AmazonKinesis_TermID	uint
-	Key	string
-	Value	string
+	AmazonKinesis_TermID uint
+	Key                  string
+	Value                string
 }
 
 type AmazonKinesis_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonKinesis_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonKinesis_Term_PricePerUnit `gorm:"ForeignKey:AmazonKinesis_Term_PriceDimensionsID"`
+	AmazonKinesis_TermID uint
+	RateCode             string
+	RateType             string
+	Description          string
+	BeginRange           string
+	EndRange             string
+	Unit                 string
+	PricePerUnit         *AmazonKinesis_Term_PricePerUnit `gorm:"ForeignKey:AmazonKinesis_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonKinesis_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonKinesis_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonKinesis_Term_PriceDimensionsID uint
+	USD                                  string
 }
+
 func (a *AmazonKinesis) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonKinesis/current/index.json"
 	resp, err := http.Get(url)

@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonEFS struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonEFS_Product
-	Terms		map[string]map[string]map[string]rawAmazonEFS_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonEFS_Product
+	Terms           map[string]map[string]map[string]rawAmazonEFS_Term
 }
 
-
 type rawAmazonEFS_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonEFS_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonEFS) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonEFS) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonEFS_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonEFS) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonEFS_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonEFS_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,67 +86,68 @@ func (l *AmazonEFS) UnmarshalJSON(data []byte) error {
 
 type AmazonEFS struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonEFS_Product `gorm:"ForeignKey:AmazonEFSID"`
-	Terms		[]*AmazonEFS_Term`gorm:"ForeignKey:AmazonEFSID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonEFS_Product `gorm:"ForeignKey:AmazonEFSID"`
+	Terms           []*AmazonEFS_Term    `gorm:"ForeignKey:AmazonEFSID"`
 }
 type AmazonEFS_Product struct {
 	gorm.Model
-		AmazonEFSID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonEFS_Product_Attributes	`gorm:"ForeignKey:AmazonEFS_Product_AttributesID"`
+	AmazonEFSID   uint
+	Sku           string
+	ProductFamily string
+	Attributes    AmazonEFS_Product_Attributes `gorm:"ForeignKey:AmazonEFS_Product_AttributesID"`
 }
 type AmazonEFS_Product_Attributes struct {
 	gorm.Model
-		AmazonEFS_Product_AttributesID	uint
-	Operation	string
-	Servicecode	string
-	Location	string
-	LocationType	string
-	StorageClass	string
-	Usagetype	string
+	AmazonEFS_Product_AttributesID uint
+	LocationType                   string
+	StorageClass                   string
+	Usagetype                      string
+	Operation                      string
+	Servicecode                    string
+	Location                       string
 }
 
 type AmazonEFS_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonEFSID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AmazonEFSID     uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AmazonEFS_Term_PriceDimensions `gorm:"ForeignKey:AmazonEFS_TermID"`
-	TermAttributes []*AmazonEFS_Term_Attributes `gorm:"ForeignKey:AmazonEFS_TermID"`
+	TermAttributes  []*AmazonEFS_Term_Attributes      `gorm:"ForeignKey:AmazonEFS_TermID"`
 }
 
 type AmazonEFS_Term_Attributes struct {
 	gorm.Model
-	AmazonEFS_TermID	uint
-	Key	string
-	Value	string
+	AmazonEFS_TermID uint
+	Key              string
+	Value            string
 }
 
 type AmazonEFS_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonEFS_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonEFS_Term_PricePerUnit `gorm:"ForeignKey:AmazonEFS_Term_PriceDimensionsID"`
+	AmazonEFS_TermID uint
+	RateCode         string
+	RateType         string
+	Description      string
+	BeginRange       string
+	EndRange         string
+	Unit             string
+	PricePerUnit     *AmazonEFS_Term_PricePerUnit `gorm:"ForeignKey:AmazonEFS_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonEFS_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonEFS_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonEFS_Term_PriceDimensionsID uint
+	USD                              string
 }
+
 func (a *AmazonEFS) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEFS/current/index.json"
 	resp, err := http.Get(url)

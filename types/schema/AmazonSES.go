@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonSES struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonSES_Product
-	Terms		map[string]map[string]map[string]rawAmazonSES_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonSES_Product
+	Terms           map[string]map[string]map[string]rawAmazonSES_Term
 }
 
-
 type rawAmazonSES_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonSES_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonSES) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonSES) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonSES_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonSES) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonSES_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonSES_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *AmazonSES) UnmarshalJSON(data []byte) error {
 
 type AmazonSES struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonSES_Product `gorm:"ForeignKey:AmazonSESID"`
-	Terms		[]*AmazonSES_Term`gorm:"ForeignKey:AmazonSESID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonSES_Product `gorm:"ForeignKey:AmazonSESID"`
+	Terms           []*AmazonSES_Term    `gorm:"ForeignKey:AmazonSESID"`
 }
 type AmazonSES_Product struct {
 	gorm.Model
-		AmazonSESID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonSES_Product_Attributes	`gorm:"ForeignKey:AmazonSES_Product_AttributesID"`
+	AmazonSESID   uint
+	Attributes    AmazonSES_Product_Attributes `gorm:"ForeignKey:AmazonSES_Product_AttributesID"`
+	Sku           string
+	ProductFamily string
 }
 type AmazonSES_Product_Attributes struct {
 	gorm.Model
-		AmazonSES_Product_AttributesID	uint
-	Usagetype	string
-	Operation	string
-	Servicecode	string
-	TransferType	string
-	FromLocation	string
-	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
+	AmazonSES_Product_AttributesID uint
+	ToLocation                     string
+	ToLocationType                 string
+	Usagetype                      string
+	Operation                      string
+	Servicecode                    string
+	TransferType                   string
+	FromLocation                   string
+	FromLocationType               string
 }
 
 type AmazonSES_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonSESID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AmazonSESID     uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AmazonSES_Term_PriceDimensions `gorm:"ForeignKey:AmazonSES_TermID"`
-	TermAttributes []*AmazonSES_Term_Attributes `gorm:"ForeignKey:AmazonSES_TermID"`
+	TermAttributes  []*AmazonSES_Term_Attributes      `gorm:"ForeignKey:AmazonSES_TermID"`
 }
 
 type AmazonSES_Term_Attributes struct {
 	gorm.Model
-	AmazonSES_TermID	uint
-	Key	string
-	Value	string
+	AmazonSES_TermID uint
+	Key              string
+	Value            string
 }
 
 type AmazonSES_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonSES_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonSES_Term_PricePerUnit `gorm:"ForeignKey:AmazonSES_Term_PriceDimensionsID"`
+	AmazonSES_TermID uint
+	RateCode         string
+	RateType         string
+	Description      string
+	BeginRange       string
+	EndRange         string
+	Unit             string
+	PricePerUnit     *AmazonSES_Term_PricePerUnit `gorm:"ForeignKey:AmazonSES_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonSES_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonSES_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonSES_Term_PriceDimensionsID uint
+	USD                              string
 }
+
 func (a *AmazonSES) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSES/current/index.json"
 	resp, err := http.Get(url)

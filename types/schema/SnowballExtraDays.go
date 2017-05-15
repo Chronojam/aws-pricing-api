@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawSnowballExtraDays struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]SnowballExtraDays_Product
-	Terms		map[string]map[string]map[string]rawSnowballExtraDays_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]SnowballExtraDays_Product
+	Terms           map[string]map[string]map[string]rawSnowballExtraDays_Term
 }
 
-
 type rawSnowballExtraDays_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]SnowballExtraDays_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
 	terms := []*SnowballExtraDays_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := SnowballExtraDays_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := SnowballExtraDays_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *SnowballExtraDays) UnmarshalJSON(data []byte) error {
 
 type SnowballExtraDays struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*SnowballExtraDays_Product `gorm:"ForeignKey:SnowballExtraDaysID"`
-	Terms		[]*SnowballExtraDays_Term`gorm:"ForeignKey:SnowballExtraDaysID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*SnowballExtraDays_Product `gorm:"ForeignKey:SnowballExtraDaysID"`
+	Terms           []*SnowballExtraDays_Term    `gorm:"ForeignKey:SnowballExtraDaysID"`
 }
 type SnowballExtraDays_Product struct {
 	gorm.Model
-		SnowballExtraDaysID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	SnowballExtraDays_Product_Attributes	`gorm:"ForeignKey:SnowballExtraDays_Product_AttributesID"`
+	SnowballExtraDaysID uint
+	Sku                 string
+	ProductFamily       string
+	Attributes          SnowballExtraDays_Product_Attributes `gorm:"ForeignKey:SnowballExtraDays_Product_AttributesID"`
 }
 type SnowballExtraDays_Product_Attributes struct {
 	gorm.Model
-		SnowballExtraDays_Product_AttributesID	uint
-	LocationType	string
-	FeeCode	string
-	FeeDescription	string
-	Usagetype	string
-	Operation	string
-	SnowballType	string
-	Servicecode	string
-	Location	string
+	SnowballExtraDays_Product_AttributesID uint
+	FeeCode                                string
+	FeeDescription                         string
+	Usagetype                              string
+	Operation                              string
+	SnowballType                           string
+	Servicecode                            string
+	Location                               string
+	LocationType                           string
 }
 
 type SnowballExtraDays_Term struct {
 	gorm.Model
-	OfferTermCode string
-	SnowballExtraDaysID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*SnowballExtraDays_Term_PriceDimensions `gorm:"ForeignKey:SnowballExtraDays_TermID"`
-	TermAttributes []*SnowballExtraDays_Term_Attributes `gorm:"ForeignKey:SnowballExtraDays_TermID"`
+	OfferTermCode       string
+	SnowballExtraDaysID uint
+	Sku                 string
+	EffectiveDate       string
+	PriceDimensions     []*SnowballExtraDays_Term_PriceDimensions `gorm:"ForeignKey:SnowballExtraDays_TermID"`
+	TermAttributes      []*SnowballExtraDays_Term_Attributes      `gorm:"ForeignKey:SnowballExtraDays_TermID"`
 }
 
 type SnowballExtraDays_Term_Attributes struct {
 	gorm.Model
-	SnowballExtraDays_TermID	uint
-	Key	string
-	Value	string
+	SnowballExtraDays_TermID uint
+	Key                      string
+	Value                    string
 }
 
 type SnowballExtraDays_Term_PriceDimensions struct {
 	gorm.Model
-	SnowballExtraDays_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*SnowballExtraDays_Term_PricePerUnit `gorm:"ForeignKey:SnowballExtraDays_Term_PriceDimensionsID"`
+	SnowballExtraDays_TermID uint
+	RateCode                 string
+	RateType                 string
+	Description              string
+	BeginRange               string
+	EndRange                 string
+	Unit                     string
+	PricePerUnit             *SnowballExtraDays_Term_PricePerUnit `gorm:"ForeignKey:SnowballExtraDays_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type SnowballExtraDays_Term_PricePerUnit struct {
 	gorm.Model
-	SnowballExtraDays_Term_PriceDimensionsID	uint
-	USD	string
+	SnowballExtraDays_Term_PriceDimensionsID uint
+	USD                                      string
 }
+
 func (a *SnowballExtraDays) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/SnowballExtraDays/current/index.json"
 	resp, err := http.Get(url)

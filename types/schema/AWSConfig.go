@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAWSConfig struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AWSConfig_Product
-	Terms		map[string]map[string]map[string]rawAWSConfig_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AWSConfig_Product
+	Terms           map[string]map[string]map[string]rawAWSConfig_Term
 }
 
-
 type rawAWSConfig_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AWSConfig_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AWSConfig) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AWSConfig) UnmarshalJSON(data []byte) error {
 	terms := []*AWSConfig_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AWSConfig) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AWSConfig_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSConfig_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,66 +86,67 @@ func (l *AWSConfig) UnmarshalJSON(data []byte) error {
 
 type AWSConfig struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AWSConfig_Product `gorm:"ForeignKey:AWSConfigID"`
-	Terms		[]*AWSConfig_Term`gorm:"ForeignKey:AWSConfigID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AWSConfig_Product `gorm:"ForeignKey:AWSConfigID"`
+	Terms           []*AWSConfig_Term    `gorm:"ForeignKey:AWSConfigID"`
 }
 type AWSConfig_Product struct {
 	gorm.Model
-		AWSConfigID	uint
-	Attributes	AWSConfig_Product_Attributes	`gorm:"ForeignKey:AWSConfig_Product_AttributesID"`
-	Sku	string
-	ProductFamily	string
+	AWSConfigID   uint
+	Sku           string
+	ProductFamily string
+	Attributes    AWSConfig_Product_Attributes `gorm:"ForeignKey:AWSConfig_Product_AttributesID"`
 }
 type AWSConfig_Product_Attributes struct {
 	gorm.Model
-		AWSConfig_Product_AttributesID	uint
-	Usagetype	string
-	Operation	string
-	Servicecode	string
-	Location	string
-	LocationType	string
+	AWSConfig_Product_AttributesID uint
+	Servicecode                    string
+	Location                       string
+	LocationType                   string
+	Usagetype                      string
+	Operation                      string
 }
 
 type AWSConfig_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AWSConfigID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AWSConfigID     uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AWSConfig_Term_PriceDimensions `gorm:"ForeignKey:AWSConfig_TermID"`
-	TermAttributes []*AWSConfig_Term_Attributes `gorm:"ForeignKey:AWSConfig_TermID"`
+	TermAttributes  []*AWSConfig_Term_Attributes      `gorm:"ForeignKey:AWSConfig_TermID"`
 }
 
 type AWSConfig_Term_Attributes struct {
 	gorm.Model
-	AWSConfig_TermID	uint
-	Key	string
-	Value	string
+	AWSConfig_TermID uint
+	Key              string
+	Value            string
 }
 
 type AWSConfig_Term_PriceDimensions struct {
 	gorm.Model
-	AWSConfig_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AWSConfig_Term_PricePerUnit `gorm:"ForeignKey:AWSConfig_Term_PriceDimensionsID"`
+	AWSConfig_TermID uint
+	RateCode         string
+	RateType         string
+	Description      string
+	BeginRange       string
+	EndRange         string
+	Unit             string
+	PricePerUnit     *AWSConfig_Term_PricePerUnit `gorm:"ForeignKey:AWSConfig_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AWSConfig_Term_PricePerUnit struct {
 	gorm.Model
-	AWSConfig_Term_PriceDimensionsID	uint
-	USD	string
+	AWSConfig_Term_PriceDimensionsID uint
+	USD                              string
 }
+
 func (a *AWSConfig) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSConfig/current/index.json"
 	resp, err := http.Get(url)

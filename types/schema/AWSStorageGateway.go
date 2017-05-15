@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAWSStorageGateway struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AWSStorageGateway_Product
-	Terms		map[string]map[string]map[string]rawAWSStorageGateway_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AWSStorageGateway_Product
+	Terms           map[string]map[string]map[string]rawAWSStorageGateway_Term
 }
 
-
 type rawAWSStorageGateway_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AWSStorageGateway_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AWSStorageGateway) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AWSStorageGateway) UnmarshalJSON(data []byte) error {
 	terms := []*AWSStorageGateway_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AWSStorageGateway) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AWSStorageGateway_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSStorageGateway_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *AWSStorageGateway) UnmarshalJSON(data []byte) error {
 
 type AWSStorageGateway struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AWSStorageGateway_Product `gorm:"ForeignKey:AWSStorageGatewayID"`
-	Terms		[]*AWSStorageGateway_Term`gorm:"ForeignKey:AWSStorageGatewayID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AWSStorageGateway_Product `gorm:"ForeignKey:AWSStorageGatewayID"`
+	Terms           []*AWSStorageGateway_Term    `gorm:"ForeignKey:AWSStorageGatewayID"`
 }
 type AWSStorageGateway_Product struct {
 	gorm.Model
-		AWSStorageGatewayID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AWSStorageGateway_Product_Attributes	`gorm:"ForeignKey:AWSStorageGateway_Product_AttributesID"`
+	AWSStorageGatewayID uint
+	Sku                 string
+	ProductFamily       string
+	Attributes          AWSStorageGateway_Product_Attributes `gorm:"ForeignKey:AWSStorageGateway_Product_AttributesID"`
 }
 type AWSStorageGateway_Product_Attributes struct {
 	gorm.Model
-		AWSStorageGateway_Product_AttributesID	uint
-	Servicecode	string
-	TransferType	string
-	FromLocation	string
-	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
-	Usagetype	string
-	Operation	string
+	AWSStorageGateway_Product_AttributesID uint
+	FromLocationType                       string
+	ToLocation                             string
+	ToLocationType                         string
+	Usagetype                              string
+	Operation                              string
+	Servicecode                            string
+	TransferType                           string
+	FromLocation                           string
 }
 
 type AWSStorageGateway_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AWSStorageGatewayID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AWSStorageGateway_Term_PriceDimensions `gorm:"ForeignKey:AWSStorageGateway_TermID"`
-	TermAttributes []*AWSStorageGateway_Term_Attributes `gorm:"ForeignKey:AWSStorageGateway_TermID"`
+	OfferTermCode       string
+	AWSStorageGatewayID uint
+	Sku                 string
+	EffectiveDate       string
+	PriceDimensions     []*AWSStorageGateway_Term_PriceDimensions `gorm:"ForeignKey:AWSStorageGateway_TermID"`
+	TermAttributes      []*AWSStorageGateway_Term_Attributes      `gorm:"ForeignKey:AWSStorageGateway_TermID"`
 }
 
 type AWSStorageGateway_Term_Attributes struct {
 	gorm.Model
-	AWSStorageGateway_TermID	uint
-	Key	string
-	Value	string
+	AWSStorageGateway_TermID uint
+	Key                      string
+	Value                    string
 }
 
 type AWSStorageGateway_Term_PriceDimensions struct {
 	gorm.Model
-	AWSStorageGateway_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AWSStorageGateway_Term_PricePerUnit `gorm:"ForeignKey:AWSStorageGateway_Term_PriceDimensionsID"`
+	AWSStorageGateway_TermID uint
+	RateCode                 string
+	RateType                 string
+	Description              string
+	BeginRange               string
+	EndRange                 string
+	Unit                     string
+	PricePerUnit             *AWSStorageGateway_Term_PricePerUnit `gorm:"ForeignKey:AWSStorageGateway_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AWSStorageGateway_Term_PricePerUnit struct {
 	gorm.Model
-	AWSStorageGateway_Term_PriceDimensionsID	uint
-	USD	string
+	AWSStorageGateway_Term_PriceDimensionsID uint
+	USD                                      string
 }
+
 func (a *AWSStorageGateway) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSStorageGateway/current/index.json"
 	resp, err := http.Get(url)

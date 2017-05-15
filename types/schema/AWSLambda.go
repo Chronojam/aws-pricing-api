@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAWSLambda struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AWSLambda_Product
-	Terms		map[string]map[string]map[string]rawAWSLambda_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AWSLambda_Product
+	Terms           map[string]map[string]map[string]rawAWSLambda_Term
 }
 
-
 type rawAWSLambda_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AWSLambda_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AWSLambda) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AWSLambda) UnmarshalJSON(data []byte) error {
 	terms := []*AWSLambda_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AWSLambda) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AWSLambda_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSLambda_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,69 +86,70 @@ func (l *AWSLambda) UnmarshalJSON(data []byte) error {
 
 type AWSLambda struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AWSLambda_Product `gorm:"ForeignKey:AWSLambdaID"`
-	Terms		[]*AWSLambda_Term`gorm:"ForeignKey:AWSLambdaID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AWSLambda_Product `gorm:"ForeignKey:AWSLambdaID"`
+	Terms           []*AWSLambda_Term    `gorm:"ForeignKey:AWSLambdaID"`
 }
 type AWSLambda_Product struct {
 	gorm.Model
-		AWSLambdaID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AWSLambda_Product_Attributes	`gorm:"ForeignKey:AWSLambda_Product_AttributesID"`
+	AWSLambdaID   uint
+	Sku           string
+	ProductFamily string
+	Attributes    AWSLambda_Product_Attributes `gorm:"ForeignKey:AWSLambda_Product_AttributesID"`
 }
 type AWSLambda_Product_Attributes struct {
 	gorm.Model
-		AWSLambda_Product_AttributesID	uint
-	Usagetype	string
-	Operation	string
-	Servicecode	string
-	TransferType	string
-	FromLocation	string
-	FromLocationType	string
-	ToLocation	string
-	ToLocationType	string
+	AWSLambda_Product_AttributesID uint
+	Operation                      string
+	Servicecode                    string
+	TransferType                   string
+	FromLocation                   string
+	FromLocationType               string
+	ToLocation                     string
+	ToLocationType                 string
+	Usagetype                      string
 }
 
 type AWSLambda_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AWSLambdaID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AWSLambdaID     uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AWSLambda_Term_PriceDimensions `gorm:"ForeignKey:AWSLambda_TermID"`
-	TermAttributes []*AWSLambda_Term_Attributes `gorm:"ForeignKey:AWSLambda_TermID"`
+	TermAttributes  []*AWSLambda_Term_Attributes      `gorm:"ForeignKey:AWSLambda_TermID"`
 }
 
 type AWSLambda_Term_Attributes struct {
 	gorm.Model
-	AWSLambda_TermID	uint
-	Key	string
-	Value	string
+	AWSLambda_TermID uint
+	Key              string
+	Value            string
 }
 
 type AWSLambda_Term_PriceDimensions struct {
 	gorm.Model
-	AWSLambda_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AWSLambda_Term_PricePerUnit `gorm:"ForeignKey:AWSLambda_Term_PriceDimensionsID"`
+	AWSLambda_TermID uint
+	RateCode         string
+	RateType         string
+	Description      string
+	BeginRange       string
+	EndRange         string
+	Unit             string
+	PricePerUnit     *AWSLambda_Term_PricePerUnit `gorm:"ForeignKey:AWSLambda_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AWSLambda_Term_PricePerUnit struct {
 	gorm.Model
-	AWSLambda_Term_PriceDimensionsID	uint
-	USD	string
+	AWSLambda_Term_PriceDimensionsID uint
+	USD                              string
 }
+
 func (a *AWSLambda) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSLambda/current/index.json"
 	resp, err := http.Get(url)

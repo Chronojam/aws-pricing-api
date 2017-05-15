@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonRekognition struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonRekognition_Product
-	Terms		map[string]map[string]map[string]rawAmazonRekognition_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonRekognition_Product
+	Terms           map[string]map[string]map[string]rawAmazonRekognition_Term
 }
 
-
 type rawAmazonRekognition_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonRekognition_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonRekognition_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonRekognition_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonRekognition_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,68 +86,69 @@ func (l *AmazonRekognition) UnmarshalJSON(data []byte) error {
 
 type AmazonRekognition struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonRekognition_Product `gorm:"ForeignKey:AmazonRekognitionID"`
-	Terms		[]*AmazonRekognition_Term`gorm:"ForeignKey:AmazonRekognitionID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonRekognition_Product `gorm:"ForeignKey:AmazonRekognitionID"`
+	Terms           []*AmazonRekognition_Term    `gorm:"ForeignKey:AmazonRekognitionID"`
 }
 type AmazonRekognition_Product struct {
 	gorm.Model
-		AmazonRekognitionID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonRekognition_Product_Attributes	`gorm:"ForeignKey:AmazonRekognition_Product_AttributesID"`
+	AmazonRekognitionID uint
+	Sku                 string
+	ProductFamily       string
+	Attributes          AmazonRekognition_Product_Attributes `gorm:"ForeignKey:AmazonRekognition_Product_AttributesID"`
 }
 type AmazonRekognition_Product_Attributes struct {
 	gorm.Model
-		AmazonRekognition_Product_AttributesID	uint
-	Operation	string
-	Servicecode	string
-	Location	string
-	LocationType	string
-	Group	string
-	GroupDescription	string
-	Usagetype	string
+	AmazonRekognition_Product_AttributesID uint
+	Location                               string
+	LocationType                           string
+	Group                                  string
+	GroupDescription                       string
+	Usagetype                              string
+	Operation                              string
+	Servicecode                            string
 }
 
 type AmazonRekognition_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonRekognitionID	uint
-	Sku	string
-	EffectiveDate string
-	PriceDimensions []*AmazonRekognition_Term_PriceDimensions `gorm:"ForeignKey:AmazonRekognition_TermID"`
-	TermAttributes []*AmazonRekognition_Term_Attributes `gorm:"ForeignKey:AmazonRekognition_TermID"`
+	OfferTermCode       string
+	AmazonRekognitionID uint
+	Sku                 string
+	EffectiveDate       string
+	PriceDimensions     []*AmazonRekognition_Term_PriceDimensions `gorm:"ForeignKey:AmazonRekognition_TermID"`
+	TermAttributes      []*AmazonRekognition_Term_Attributes      `gorm:"ForeignKey:AmazonRekognition_TermID"`
 }
 
 type AmazonRekognition_Term_Attributes struct {
 	gorm.Model
-	AmazonRekognition_TermID	uint
-	Key	string
-	Value	string
+	AmazonRekognition_TermID uint
+	Key                      string
+	Value                    string
 }
 
 type AmazonRekognition_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonRekognition_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonRekognition_Term_PricePerUnit `gorm:"ForeignKey:AmazonRekognition_Term_PriceDimensionsID"`
+	AmazonRekognition_TermID uint
+	RateCode                 string
+	RateType                 string
+	Description              string
+	BeginRange               string
+	EndRange                 string
+	Unit                     string
+	PricePerUnit             *AmazonRekognition_Term_PricePerUnit `gorm:"ForeignKey:AmazonRekognition_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonRekognition_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonRekognition_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonRekognition_Term_PriceDimensionsID uint
+	USD                                      string
 }
+
 func (a *AmazonRekognition) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRekognition/current/index.json"
 	resp, err := http.Get(url)

@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAWSCodeCommit struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AWSCodeCommit_Product
-	Terms		map[string]map[string]map[string]rawAWSCodeCommit_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AWSCodeCommit_Product
+	Terms           map[string]map[string]map[string]rawAWSCodeCommit_Term
 }
 
-
 type rawAWSCodeCommit_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AWSCodeCommit_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
 	terms := []*AWSCodeCommit_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AWSCodeCommit_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AWSCodeCommit_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,67 +86,68 @@ func (l *AWSCodeCommit) UnmarshalJSON(data []byte) error {
 
 type AWSCodeCommit struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AWSCodeCommit_Product `gorm:"ForeignKey:AWSCodeCommitID"`
-	Terms		[]*AWSCodeCommit_Term`gorm:"ForeignKey:AWSCodeCommitID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AWSCodeCommit_Product `gorm:"ForeignKey:AWSCodeCommitID"`
+	Terms           []*AWSCodeCommit_Term    `gorm:"ForeignKey:AWSCodeCommitID"`
 }
 type AWSCodeCommit_Product struct {
 	gorm.Model
-		AWSCodeCommitID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AWSCodeCommit_Product_Attributes	`gorm:"ForeignKey:AWSCodeCommit_Product_AttributesID"`
+	AWSCodeCommitID uint
+	Sku             string
+	ProductFamily   string
+	Attributes      AWSCodeCommit_Product_Attributes `gorm:"ForeignKey:AWSCodeCommit_Product_AttributesID"`
 }
 type AWSCodeCommit_Product_Attributes struct {
 	gorm.Model
-		AWSCodeCommit_Product_AttributesID	uint
-	Servicecode	string
-	Location	string
-	LocationType	string
-	Group	string
-	Usagetype	string
-	Operation	string
+	AWSCodeCommit_Product_AttributesID uint
+	Servicecode                        string
+	Location                           string
+	LocationType                       string
+	Group                              string
+	Usagetype                          string
+	Operation                          string
 }
 
 type AWSCodeCommit_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AWSCodeCommitID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AWSCodeCommitID uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AWSCodeCommit_Term_PriceDimensions `gorm:"ForeignKey:AWSCodeCommit_TermID"`
-	TermAttributes []*AWSCodeCommit_Term_Attributes `gorm:"ForeignKey:AWSCodeCommit_TermID"`
+	TermAttributes  []*AWSCodeCommit_Term_Attributes      `gorm:"ForeignKey:AWSCodeCommit_TermID"`
 }
 
 type AWSCodeCommit_Term_Attributes struct {
 	gorm.Model
-	AWSCodeCommit_TermID	uint
-	Key	string
-	Value	string
+	AWSCodeCommit_TermID uint
+	Key                  string
+	Value                string
 }
 
 type AWSCodeCommit_Term_PriceDimensions struct {
 	gorm.Model
-	AWSCodeCommit_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AWSCodeCommit_Term_PricePerUnit `gorm:"ForeignKey:AWSCodeCommit_Term_PriceDimensionsID"`
+	AWSCodeCommit_TermID uint
+	RateCode             string
+	RateType             string
+	Description          string
+	BeginRange           string
+	EndRange             string
+	Unit                 string
+	PricePerUnit         *AWSCodeCommit_Term_PricePerUnit `gorm:"ForeignKey:AWSCodeCommit_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AWSCodeCommit_Term_PricePerUnit struct {
 	gorm.Model
-	AWSCodeCommit_Term_PriceDimensionsID	uint
-	USD	string
+	AWSCodeCommit_Term_PriceDimensionsID uint
+	USD                                  string
 }
+
 func (a *AWSCodeCommit) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSCodeCommit/current/index.json"
 	resp, err := http.Get(url)

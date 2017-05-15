@@ -1,29 +1,28 @@
 package schema
 
 import (
-	"net/http"
 	"encoding/json"
-	"io/ioutil"
 	"github.com/jinzhu/gorm"
+	"io/ioutil"
+	"net/http"
 )
 
 type rawAmazonWAM struct {
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	map[string]AmazonWAM_Product
-	Terms		map[string]map[string]map[string]rawAmazonWAM_Term
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        map[string]AmazonWAM_Product
+	Terms           map[string]map[string]map[string]rawAmazonWAM_Term
 }
 
-
 type rawAmazonWAM_Term struct {
-	OfferTermCode string
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions map[string]AmazonWAM_Term_PriceDimensions
-	TermAttributes map[string]string
+	TermAttributes  map[string]string
 }
 
 func (l *AmazonWAM) UnmarshalJSON(data []byte) error {
@@ -37,7 +36,8 @@ func (l *AmazonWAM) UnmarshalJSON(data []byte) error {
 	terms := []*AmazonWAM_Term{}
 
 	// Convert from map to slice
-	for _, pr := range p.Products {
+	for i, _ := range p.Products {
+		pr := p.Products[i]
 		products = append(products, &pr)
 	}
 
@@ -55,17 +55,17 @@ func (l *AmazonWAM) UnmarshalJSON(data []byte) error {
 
 				for key, value := range term.TermAttributes {
 					tr := AmazonWAM_Term_Attributes{
-						Key: key,
+						Key:   key,
 						Value: value,
 					}
 					tAttributes = append(tAttributes, &tr)
 				}
 
 				t := AmazonWAM_Term{
-					OfferTermCode: term.OfferTermCode,
-					Sku: term.Sku,
-					EffectiveDate: term.EffectiveDate,
-					TermAttributes: tAttributes,
+					OfferTermCode:   term.OfferTermCode,
+					Sku:             term.Sku,
+					EffectiveDate:   term.EffectiveDate,
+					TermAttributes:  tAttributes,
 					PriceDimensions: pDimensions,
 				}
 
@@ -86,68 +86,69 @@ func (l *AmazonWAM) UnmarshalJSON(data []byte) error {
 
 type AmazonWAM struct {
 	gorm.Model
-	FormatVersion	string
-	Disclaimer	string
-	OfferCode	string
-	Version		string
-	PublicationDate	string
-	Products	[]*AmazonWAM_Product `gorm:"ForeignKey:AmazonWAMID"`
-	Terms		[]*AmazonWAM_Term`gorm:"ForeignKey:AmazonWAMID"`
+	FormatVersion   string
+	Disclaimer      string
+	OfferCode       string
+	Version         string
+	PublicationDate string
+	Products        []*AmazonWAM_Product `gorm:"ForeignKey:AmazonWAMID"`
+	Terms           []*AmazonWAM_Term    `gorm:"ForeignKey:AmazonWAMID"`
 }
 type AmazonWAM_Product struct {
 	gorm.Model
-		AmazonWAMID	uint
-	Sku	string
-	ProductFamily	string
-	Attributes	AmazonWAM_Product_Attributes	`gorm:"ForeignKey:AmazonWAM_Product_AttributesID"`
+	AmazonWAMID   uint
+	ProductFamily string
+	Attributes    AmazonWAM_Product_Attributes `gorm:"ForeignKey:AmazonWAM_Product_AttributesID"`
+	Sku           string
 }
 type AmazonWAM_Product_Attributes struct {
 	gorm.Model
-		AmazonWAM_Product_AttributesID	uint
-	Operation	string
-	PlanType	string
-	Servicecode	string
-	Location	string
-	LocationType	string
-	Group	string
-	Usagetype	string
+	AmazonWAM_Product_AttributesID uint
+	LocationType                   string
+	Group                          string
+	Usagetype                      string
+	Operation                      string
+	PlanType                       string
+	Servicecode                    string
+	Location                       string
 }
 
 type AmazonWAM_Term struct {
 	gorm.Model
-	OfferTermCode string
-	AmazonWAMID	uint
-	Sku	string
-	EffectiveDate string
+	OfferTermCode   string
+	AmazonWAMID     uint
+	Sku             string
+	EffectiveDate   string
 	PriceDimensions []*AmazonWAM_Term_PriceDimensions `gorm:"ForeignKey:AmazonWAM_TermID"`
-	TermAttributes []*AmazonWAM_Term_Attributes `gorm:"ForeignKey:AmazonWAM_TermID"`
+	TermAttributes  []*AmazonWAM_Term_Attributes      `gorm:"ForeignKey:AmazonWAM_TermID"`
 }
 
 type AmazonWAM_Term_Attributes struct {
 	gorm.Model
-	AmazonWAM_TermID	uint
-	Key	string
-	Value	string
+	AmazonWAM_TermID uint
+	Key              string
+	Value            string
 }
 
 type AmazonWAM_Term_PriceDimensions struct {
 	gorm.Model
-	AmazonWAM_TermID	uint
-	RateCode	string
-	RateType	string
-	Description	string
-	BeginRange	string
-	EndRange	string
-	Unit	string
-	PricePerUnit	*AmazonWAM_Term_PricePerUnit `gorm:"ForeignKey:AmazonWAM_Term_PriceDimensionsID"`
+	AmazonWAM_TermID uint
+	RateCode         string
+	RateType         string
+	Description      string
+	BeginRange       string
+	EndRange         string
+	Unit             string
+	PricePerUnit     *AmazonWAM_Term_PricePerUnit `gorm:"ForeignKey:AmazonWAM_Term_PriceDimensionsID"`
 	// AppliesTo	[]string
 }
 
 type AmazonWAM_Term_PricePerUnit struct {
 	gorm.Model
-	AmazonWAM_Term_PriceDimensionsID	uint
-	USD	string
+	AmazonWAM_Term_PriceDimensionsID uint
+	USD                              string
 }
+
 func (a *AmazonWAM) Refresh() error {
 	var url = "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonWAM/current/index.json"
 	resp, err := http.Get(url)
