@@ -104,13 +104,14 @@ type AmazonAthena_Product struct {
 type AmazonAthena_Product_Attributes struct {
 	gorm.Model
 	AmazonAthena_Product_AttributesID uint
+	Servicecode                       string
+	Description                       string
+	Location                          string
 	LocationType                      string
 	Usagetype                         string
 	Operation                         string
 	FreeQueryTypes                    string
-	Servicecode                       string
-	Description                       string
-	Location                          string
+	Servicename                       string
 }
 
 type AmazonAthena_Term struct {

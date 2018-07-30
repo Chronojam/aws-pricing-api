@@ -104,13 +104,13 @@ type AmazonWAM_Product struct {
 type AmazonWAM_Product_Attributes struct {
 	gorm.Model
 	AmazonWAM_Product_AttributesID uint
-	LocationType                   string
-	Group                          string
-	Usagetype                      string
 	Operation                      string
 	PlanType                       string
 	Servicecode                    string
 	Location                       string
+	LocationType                   string
+	Group                          string
+	Usagetype                      string
 }
 
 type AmazonWAM_Term struct {

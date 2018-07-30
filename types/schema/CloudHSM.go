@@ -104,13 +104,14 @@ type CloudHSM_Product struct {
 type CloudHSM_Product_Attributes struct {
 	gorm.Model
 	CloudHSM_Product_AttributesID uint
-	UpfrontCommitment             string
-	Servicecode                   string
 	Location                      string
 	LocationType                  string
 	InstanceFamily                string
+	UpfrontCommitment             string
+	Servicecode                   string
 	Usagetype                     string
 	Operation                     string
+	Servicename                   string
 	TrialProduct                  string
 }
 

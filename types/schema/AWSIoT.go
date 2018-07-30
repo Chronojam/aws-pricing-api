@@ -97,21 +97,20 @@ type AWSIoT struct {
 type AWSIoT_Product struct {
 	gorm.Model
 	AWSIoTID      uint
-	Attributes    AWSIoT_Product_Attributes `gorm:"ForeignKey:AWSIoT_Product_AttributesID"`
 	Sku           string
 	ProductFamily string
+	Attributes    AWSIoT_Product_Attributes `gorm:"ForeignKey:AWSIoT_Product_AttributesID"`
 }
 type AWSIoT_Product_Attributes struct {
 	gorm.Model
 	AWSIoT_Product_AttributesID uint
-	Operation                   string
-	Isshadow                    string
-	Iswebsocket                 string
-	Protocol                    string
+	EventType                   string
+	Servicename                 string
 	Servicecode                 string
 	Location                    string
 	LocationType                string
 	Usagetype                   string
+	Operation                   string
 }
 
 type AWSIoT_Term struct {

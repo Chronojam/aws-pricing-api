@@ -104,12 +104,13 @@ type AWSCodeDeploy_Product struct {
 type AWSCodeDeploy_Product_Attributes struct {
 	gorm.Model
 	AWSCodeDeploy_Product_AttributesID uint
-	Servicecode                        string
 	Location                           string
 	LocationType                       string
 	Usagetype                          string
 	Operation                          string
 	DeploymentLocation                 string
+	Servicename                        string
+	Servicecode                        string
 }
 
 type AWSCodeDeploy_Term struct {

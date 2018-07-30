@@ -105,9 +105,10 @@ type AmazonGameLift_Product_Attributes struct {
 	gorm.Model
 	AmazonGameLift_Product_AttributesID uint
 	ToLocation                          string
+	Operation                           string
 	ToLocationType                      string
 	Usagetype                           string
-	Operation                           string
+	Servicename                         string
 	Servicecode                         string
 	TransferType                        string
 	FromLocation                        string

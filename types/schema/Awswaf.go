@@ -97,20 +97,21 @@ type Awswaf struct {
 type Awswaf_Product struct {
 	gorm.Model
 	AwswafID      uint
+	Attributes    Awswaf_Product_Attributes `gorm:"ForeignKey:Awswaf_Product_AttributesID"`
 	Sku           string
 	ProductFamily string
-	Attributes    Awswaf_Product_Attributes `gorm:"ForeignKey:Awswaf_Product_AttributesID"`
 }
 type Awswaf_Product_Attributes struct {
 	gorm.Model
 	Awswaf_Product_AttributesID uint
-	Usagetype                   string
-	Operation                   string
-	Servicecode                 string
-	Location                    string
 	LocationType                string
 	Group                       string
 	GroupDescription            string
+	Usagetype                   string
+	Operation                   string
+	Servicename                 string
+	Servicecode                 string
+	Location                    string
 }
 
 type Awswaf_Term struct {

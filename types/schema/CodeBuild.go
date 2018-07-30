@@ -97,23 +97,24 @@ type CodeBuild struct {
 type CodeBuild_Product struct {
 	gorm.Model
 	CodeBuildID   uint
-	Attributes    CodeBuild_Product_Attributes `gorm:"ForeignKey:CodeBuild_Product_AttributesID"`
 	Sku           string
 	ProductFamily string
+	Attributes    CodeBuild_Product_Attributes `gorm:"ForeignKey:CodeBuild_Product_AttributesID"`
 }
 type CodeBuild_Product_Attributes struct {
 	gorm.Model
 	CodeBuild_Product_AttributesID uint
 	Location                       string
-	OperatingSystem                string
+	Memory                         string
+	Usagetype                      string
 	Operation                      string
-	ComputeFamily                  string
 	ComputeType                    string
+	Servicename                    string
 	Servicecode                    string
 	LocationType                   string
 	Vcpu                           string
-	Memory                         string
-	Usagetype                      string
+	OperatingSystem                string
+	ComputeFamily                  string
 }
 
 type CodeBuild_Term struct {

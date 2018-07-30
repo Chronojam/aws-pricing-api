@@ -105,14 +105,14 @@ type Datapipeline_Product_Attributes struct {
 	gorm.Model
 	Datapipeline_Product_AttributesID uint
 	Servicecode                       string
+	LocationType                      string
+	Operation                         string
+	ExecutionLocation                 string
 	Location                          string
 	Group                             string
 	Usagetype                         string
 	ExecutionFrequency                string
-	ExecutionLocation                 string
 	FrequencyMode                     string
-	LocationType                      string
-	Operation                         string
 }
 
 type Datapipeline_Term struct {

@@ -97,19 +97,20 @@ type AmazonKinesisAnalytics struct {
 type AmazonKinesisAnalytics_Product struct {
 	gorm.Model
 	AmazonKinesisAnalyticsID uint
-	Attributes               AmazonKinesisAnalytics_Product_Attributes `gorm:"ForeignKey:AmazonKinesisAnalytics_Product_AttributesID"`
 	Sku                      string
 	ProductFamily            string
+	Attributes               AmazonKinesisAnalytics_Product_Attributes `gorm:"ForeignKey:AmazonKinesisAnalytics_Product_AttributesID"`
 }
 type AmazonKinesisAnalytics_Product_Attributes struct {
 	gorm.Model
 	AmazonKinesisAnalytics_Product_AttributesID uint
-	Usagetype                                   string
-	Operation                                   string
 	Servicecode                                 string
 	Description                                 string
 	Location                                    string
 	LocationType                                string
+	Usagetype                                   string
+	Operation                                   string
+	Servicename                                 string
 }
 
 type AmazonKinesisAnalytics_Term struct {

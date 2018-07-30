@@ -97,19 +97,19 @@ type AmazonRoute53 struct {
 type AmazonRoute53_Product struct {
 	gorm.Model
 	AmazonRoute53ID uint
+	Attributes      AmazonRoute53_Product_Attributes `gorm:"ForeignKey:AmazonRoute53_Product_AttributesID"`
 	Sku             string
 	ProductFamily   string
-	Attributes      AmazonRoute53_Product_Attributes `gorm:"ForeignKey:AmazonRoute53_Product_AttributesID"`
 }
 type AmazonRoute53_Product_Attributes struct {
 	gorm.Model
 	AmazonRoute53_Product_AttributesID uint
-	Group                              string
-	GroupDescription                   string
+	Servicecode                        string
+	RoutingType                        string
+	RoutingTarget                      string
 	Usagetype                          string
 	Operation                          string
-	Servicecode                        string
-	ResourceEndpoint                   string
+	Servicename                        string
 }
 
 type AmazonRoute53_Term struct {

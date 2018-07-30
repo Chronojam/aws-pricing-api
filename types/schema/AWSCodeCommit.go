@@ -104,12 +104,12 @@ type AWSCodeCommit_Product struct {
 type AWSCodeCommit_Product_Attributes struct {
 	gorm.Model
 	AWSCodeCommit_Product_AttributesID uint
-	Servicecode                        string
-	Location                           string
-	LocationType                       string
 	Group                              string
 	Usagetype                          string
 	Operation                          string
+	Servicecode                        string
+	Location                           string
+	LocationType                       string
 }
 
 type AWSCodeCommit_Term struct {

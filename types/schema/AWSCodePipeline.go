@@ -104,12 +104,13 @@ type AWSCodePipeline_Product struct {
 type AWSCodePipeline_Product_Attributes struct {
 	gorm.Model
 	AWSCodePipeline_Product_AttributesID uint
-	Servicecode                          string
-	Description                          string
-	Location                             string
 	LocationType                         string
 	Usagetype                            string
 	Operation                            string
+	Servicename                          string
+	Servicecode                          string
+	Description                          string
+	Location                             string
 }
 
 type AWSCodePipeline_Term struct {

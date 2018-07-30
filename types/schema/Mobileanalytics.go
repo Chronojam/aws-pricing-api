@@ -104,13 +104,13 @@ type Mobileanalytics_Product struct {
 type Mobileanalytics_Product_Attributes struct {
 	gorm.Model
 	Mobileanalytics_Product_AttributesID uint
+	Usagetype                            string
+	Operation                            string
 	IncludedEvents                       string
 	Servicecode                          string
 	Description                          string
 	Location                             string
 	LocationType                         string
-	Usagetype                            string
-	Operation                            string
 }
 
 type Mobileanalytics_Term struct {

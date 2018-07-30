@@ -104,14 +104,15 @@ type AWSQueueService_Product struct {
 type AWSQueueService_Product_Attributes struct {
 	gorm.Model
 	AWSQueueService_Product_AttributesID uint
-	ToLocationType                       string
-	Usagetype                            string
 	Operation                            string
-	Servicecode                          string
 	TransferType                         string
 	FromLocation                         string
 	FromLocationType                     string
 	ToLocation                           string
+	ToLocationType                       string
+	Usagetype                            string
+	Servicecode                          string
+	Servicename                          string
 }
 
 type AWSQueueService_Term struct {

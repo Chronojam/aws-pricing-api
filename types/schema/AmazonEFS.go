@@ -104,12 +104,13 @@ type AmazonEFS_Product struct {
 type AmazonEFS_Product_Attributes struct {
 	gorm.Model
 	AmazonEFS_Product_AttributesID uint
+	Location                       string
 	LocationType                   string
-	StorageClass                   string
 	Usagetype                      string
 	Operation                      string
+	Servicename                    string
+	ThroughputClass                string
 	Servicecode                    string
-	Location                       string
 }
 
 type AmazonEFS_Term struct {

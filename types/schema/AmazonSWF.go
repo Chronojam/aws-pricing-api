@@ -104,14 +104,15 @@ type AmazonSWF_Product struct {
 type AmazonSWF_Product_Attributes struct {
 	gorm.Model
 	AmazonSWF_Product_AttributesID uint
-	FromLocation                   string
 	FromLocationType               string
+	Servicecode                    string
+	TransferType                   string
+	FromLocation                   string
 	ToLocation                     string
 	ToLocationType                 string
 	Usagetype                      string
 	Operation                      string
-	Servicecode                    string
-	TransferType                   string
+	Servicename                    string
 }
 
 type AmazonSWF_Term struct {

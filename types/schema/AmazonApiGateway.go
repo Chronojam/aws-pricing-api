@@ -104,14 +104,13 @@ type AmazonApiGateway_Product struct {
 type AmazonApiGateway_Product_Attributes struct {
 	gorm.Model
 	AmazonApiGateway_Product_AttributesID uint
-	Servicecode                           string
-	TransferType                          string
-	FromLocation                          string
-	FromLocationType                      string
-	ToLocation                            string
-	ToLocationType                        string
-	Usagetype                             string
 	Operation                             string
+	CacheMemorySizeGb                     string
+	Servicename                           string
+	Servicecode                           string
+	Location                              string
+	LocationType                          string
+	Usagetype                             string
 }
 
 type AmazonApiGateway_Term struct {

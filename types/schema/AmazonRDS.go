@@ -104,27 +104,32 @@ type AmazonRDS_Product struct {
 type AmazonRDS_Product_Attributes struct {
 	gorm.Model
 	AmazonRDS_Product_AttributesID uint
-	InstanceFamily                 string
-	Vcpu                           string
-	ClockSpeed                     string
+	DeploymentOption               string
 	Usagetype                      string
-	Operation                      string
-	Location                       string
+	NormalizationSizeFactor        string
+	InstanceType                   string
 	Storage                        string
 	DatabaseEdition                string
 	LicenseModel                   string
-	DeploymentOption               string
-	EngineCode                     string
+	Operation                      string
+	DedicatedEbsThroughput         string
+	EnhancedNetworkingSupported    string
 	ProcessorFeatures              string
 	Servicecode                    string
-	InstanceType                   string
-	CurrentGeneration              string
-	PhysicalProcessor              string
-	NetworkPerformance             string
-	LocationType                   string
-	Memory                         string
+	Location                       string
 	ProcessorArchitecture          string
 	DatabaseEngine                 string
+	Vcpu                           string
+	ClockSpeed                     string
+	Memory                         string
+	NetworkPerformance             string
+	EngineCode                     string
+	InstanceTypeFamily             string
+	LocationType                   string
+	CurrentGeneration              string
+	InstanceFamily                 string
+	PhysicalProcessor              string
+	Servicename                    string
 }
 
 type AmazonRDS_Term struct {

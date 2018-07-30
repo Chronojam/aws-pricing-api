@@ -97,19 +97,24 @@ type AWSDirectConnect struct {
 type AWSDirectConnect_Product struct {
 	gorm.Model
 	AWSDirectConnectID uint
-	Sku                string
 	ProductFamily      string
 	Attributes         AWSDirectConnect_Product_Attributes `gorm:"ForeignKey:AWSDirectConnect_Product_AttributesID"`
+	Sku                string
 }
 type AWSDirectConnect_Product_Attributes struct {
 	gorm.Model
 	AWSDirectConnect_Product_AttributesID uint
-	Location                              string
-	LocationType                          string
+	FromLocationType                      string
 	Usagetype                             string
+	Version                               string
+	VirtualInterfaceType                  string
+	TransferType                          string
+	FromLocation                          string
+	ToLocation                            string
+	ToLocationType                        string
 	Operation                             string
-	DirectConnectLocation                 string
-	PortSpeed                             string
+	Georegioncode                         string
+	Servicename                           string
 	Servicecode                           string
 }
 

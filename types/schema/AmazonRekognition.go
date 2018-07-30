@@ -104,13 +104,14 @@ type AmazonRekognition_Product struct {
 type AmazonRekognition_Product_Attributes struct {
 	gorm.Model
 	AmazonRekognition_Product_AttributesID uint
-	Location                               string
-	LocationType                           string
-	Group                                  string
 	GroupDescription                       string
 	Usagetype                              string
 	Operation                              string
+	Servicename                            string
 	Servicecode                            string
+	Location                               string
+	LocationType                           string
+	Group                                  string
 }
 
 type AmazonRekognition_Term struct {

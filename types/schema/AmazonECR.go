@@ -104,14 +104,15 @@ type AmazonECR_Product struct {
 type AmazonECR_Product_Attributes struct {
 	gorm.Model
 	AmazonECR_Product_AttributesID uint
+	TransferType                   string
 	ToLocation                     string
-	ToLocationType                 string
-	Usagetype                      string
 	Operation                      string
 	Servicecode                    string
-	TransferType                   string
-	FromLocation                   string
 	FromLocationType               string
+	ToLocationType                 string
+	Usagetype                      string
+	Servicename                    string
+	FromLocation                   string
 }
 
 type AmazonECR_Term struct {

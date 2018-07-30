@@ -104,15 +104,14 @@ type AmazonKinesis_Product struct {
 type AmazonKinesis_Product_Attributes struct {
 	gorm.Model
 	AmazonKinesis_Product_AttributesID uint
-	Servicecode                        string
-	Location                           string
-	LocationType                       string
 	Group                              string
-	StandardStorageRetentionIncluded   string
 	GroupDescription                   string
 	Usagetype                          string
 	Operation                          string
-	MaximumExtendedStorage             string
+	Servicename                        string
+	Servicecode                        string
+	Location                           string
+	LocationType                       string
 }
 
 type AmazonKinesis_Term struct {

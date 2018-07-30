@@ -104,11 +104,11 @@ type AlexaTopSites_Product struct {
 type AlexaTopSites_Product_Attributes struct {
 	gorm.Model
 	AlexaTopSites_Product_AttributesID uint
+	Usagetype                          string
+	Operation                          string
 	Servicecode                        string
 	Location                           string
 	LocationType                       string
-	Usagetype                          string
-	Operation                          string
 }
 
 type AlexaTopSites_Term struct {

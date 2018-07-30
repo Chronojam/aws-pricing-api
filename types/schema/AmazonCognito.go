@@ -97,18 +97,19 @@ type AmazonCognito struct {
 type AmazonCognito_Product struct {
 	gorm.Model
 	AmazonCognitoID uint
+	Attributes      AmazonCognito_Product_Attributes `gorm:"ForeignKey:AmazonCognito_Product_AttributesID"`
 	Sku             string
 	ProductFamily   string
-	Attributes      AmazonCognito_Product_Attributes `gorm:"ForeignKey:AmazonCognito_Product_AttributesID"`
 }
 type AmazonCognito_Product_Attributes struct {
 	gorm.Model
 	AmazonCognito_Product_AttributesID uint
-	Usagetype                          string
-	Operation                          string
 	Servicecode                        string
 	Location                           string
 	LocationType                       string
+	Usagetype                          string
+	Operation                          string
+	Servicename                        string
 }
 
 type AmazonCognito_Term struct {

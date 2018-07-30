@@ -105,10 +105,11 @@ type AmazonStates_Product_Attributes struct {
 	gorm.Model
 	AmazonStates_Product_AttributesID uint
 	Servicecode                       string
-	TransferType                      string
 	FromLocation                      string
-	FromLocationType                  string
 	ToLocation                        string
+	Servicename                       string
+	TransferType                      string
+	FromLocationType                  string
 	ToLocationType                    string
 	Usagetype                         string
 	Operation                         string

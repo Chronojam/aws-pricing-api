@@ -107,10 +107,11 @@ type AmazonGlacier_Product_Attributes struct {
 	Servicecode                        string
 	Location                           string
 	LocationType                       string
-	Group                              string
-	GroupDescription                   string
+	FeeCode                            string
+	FeeDescription                     string
 	Usagetype                          string
 	Operation                          string
+	Servicename                        string
 }
 
 type AmazonGlacier_Term struct {

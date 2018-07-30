@@ -97,21 +97,22 @@ type SnowballExtraDays struct {
 type SnowballExtraDays_Product struct {
 	gorm.Model
 	SnowballExtraDaysID uint
-	Sku                 string
 	ProductFamily       string
 	Attributes          SnowballExtraDays_Product_Attributes `gorm:"ForeignKey:SnowballExtraDays_Product_AttributesID"`
+	Sku                 string
 }
 type SnowballExtraDays_Product_Attributes struct {
 	gorm.Model
 	SnowballExtraDays_Product_AttributesID uint
-	FeeCode                                string
 	FeeDescription                         string
 	Usagetype                              string
 	Operation                              string
-	SnowballType                           string
+	Servicename                            string
 	Servicecode                            string
 	Location                               string
+	SnowballType                           string
 	LocationType                           string
+	FeeCode                                string
 }
 
 type SnowballExtraDays_Term struct {

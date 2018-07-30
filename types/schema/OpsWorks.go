@@ -97,20 +97,21 @@ type OpsWorks struct {
 type OpsWorks_Product struct {
 	gorm.Model
 	OpsWorksID    uint
+	Attributes    OpsWorks_Product_Attributes `gorm:"ForeignKey:OpsWorks_Product_AttributesID"`
 	Sku           string
 	ProductFamily string
-	Attributes    OpsWorks_Product_Attributes `gorm:"ForeignKey:OpsWorks_Product_AttributesID"`
 }
 type OpsWorks_Product_Attributes struct {
 	gorm.Model
 	OpsWorks_Product_AttributesID uint
-	Servicecode                   string
 	Location                      string
 	LocationType                  string
 	Group                         string
 	Usagetype                     string
 	Operation                     string
 	ServerLocation                string
+	Servicename                   string
+	Servicecode                   string
 }
 
 type OpsWorks_Term struct {

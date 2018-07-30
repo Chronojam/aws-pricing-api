@@ -105,13 +105,16 @@ type IngestionServiceSnowball_Product_Attributes struct {
 	gorm.Model
 	IngestionServiceSnowball_Product_AttributesID uint
 	Servicecode                                   string
-	Location                                      string
-	LocationType                                  string
-	Group                                         string
 	GroupDescription                              string
+	ToLocationType                                string
 	Usagetype                                     string
 	Operation                                     string
-	SnowballType                                  string
+	Servicename                                   string
+	Group                                         string
+	TransferType                                  string
+	FromLocation                                  string
+	FromLocationType                              string
+	ToLocation                                    string
 }
 
 type IngestionServiceSnowball_Term struct {

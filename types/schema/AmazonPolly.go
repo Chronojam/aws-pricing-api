@@ -109,6 +109,7 @@ type AmazonPolly_Product_Attributes struct {
 	LocationType                     string
 	Usagetype                        string
 	Operation                        string
+	Servicename                      string
 }
 
 type AmazonPolly_Term struct {

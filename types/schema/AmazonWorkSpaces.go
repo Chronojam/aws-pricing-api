@@ -104,21 +104,25 @@ type AmazonWorkSpaces_Product struct {
 type AmazonWorkSpaces_Product_Attributes struct {
 	gorm.Model
 	AmazonWorkSpaces_Product_AttributesID uint
-	Storage                               string
-	Group                                 string
 	ResourceType                          string
-	SoftwareIncluded                      string
-	Vcpu                                  string
+	Uservolume                            string
+	LocationType                          string
+	GroupDescription                      string
+	Rootvolume                            string
+	Storage                               string
+	License                               string
 	Operation                             string
 	Bundle                                string
-	GroupDescription                      string
-	Usagetype                             string
-	License                               string
 	RunningMode                           string
+	Servicename                           string
+	SoftwareIncluded                      string
+	OperatingSystem                       string
+	Usagetype                             string
+	Vcpu                                  string
+	Memory                                string
+	Group                                 string
 	Servicecode                           string
 	Location                              string
-	LocationType                          string
-	Memory                                string
 }
 
 type AmazonWorkSpaces_Term struct {

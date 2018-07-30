@@ -97,20 +97,21 @@ type AmazonCloudFront struct {
 type AmazonCloudFront_Product struct {
 	gorm.Model
 	AmazonCloudFrontID uint
+	Attributes         AmazonCloudFront_Product_Attributes `gorm:"ForeignKey:AmazonCloudFront_Product_AttributesID"`
 	Sku                string
 	ProductFamily      string
-	Attributes         AmazonCloudFront_Product_Attributes `gorm:"ForeignKey:AmazonCloudFront_Product_AttributesID"`
 }
 type AmazonCloudFront_Product_Attributes struct {
 	gorm.Model
 	AmazonCloudFront_Product_AttributesID uint
+	Usagetype                             string
+	Operation                             string
 	RequestDescription                    string
 	RequestType                           string
+	Servicename                           string
 	Servicecode                           string
 	Location                              string
 	LocationType                          string
-	Usagetype                             string
-	Operation                             string
 }
 
 type AmazonCloudFront_Term struct {

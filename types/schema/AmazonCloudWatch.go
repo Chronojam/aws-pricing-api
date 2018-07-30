@@ -97,20 +97,21 @@ type AmazonCloudWatch struct {
 type AmazonCloudWatch_Product struct {
 	gorm.Model
 	AmazonCloudWatchID uint
+	Attributes         AmazonCloudWatch_Product_Attributes `gorm:"ForeignKey:AmazonCloudWatch_Product_AttributesID"`
 	Sku                string
 	ProductFamily      string
-	Attributes         AmazonCloudWatch_Product_Attributes `gorm:"ForeignKey:AmazonCloudWatch_Product_AttributesID"`
 }
 type AmazonCloudWatch_Product_Attributes struct {
 	gorm.Model
 	AmazonCloudWatch_Product_AttributesID uint
+	Operation                             string
+	Servicename                           string
 	Servicecode                           string
 	Location                              string
 	LocationType                          string
 	Group                                 string
 	GroupDescription                      string
 	Usagetype                             string
-	Operation                             string
 }
 
 type AmazonCloudWatch_Term struct {

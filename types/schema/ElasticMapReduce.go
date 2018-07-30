@@ -97,21 +97,22 @@ type ElasticMapReduce struct {
 type ElasticMapReduce_Product struct {
 	gorm.Model
 	ElasticMapReduceID uint
-	Sku                string
 	ProductFamily      string
 	Attributes         ElasticMapReduce_Product_Attributes `gorm:"ForeignKey:ElasticMapReduce_Product_AttributesID"`
+	Sku                string
 }
 type ElasticMapReduce_Product_Attributes struct {
 	gorm.Model
 	ElasticMapReduce_Product_AttributesID uint
-	Servicecode                           string
 	Location                              string
 	LocationType                          string
-	InstanceType                          string
-	InstanceFamily                        string
 	Usagetype                             string
 	Operation                             string
+	Servicecode                           string
+	InstanceFamily                        string
+	Servicename                           string
 	SoftwareType                          string
+	InstanceType                          string
 }
 
 type ElasticMapReduce_Term struct {

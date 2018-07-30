@@ -97,18 +97,19 @@ type Awskms struct {
 type Awskms_Product struct {
 	gorm.Model
 	AwskmsID      uint
+	Attributes    Awskms_Product_Attributes `gorm:"ForeignKey:Awskms_Product_AttributesID"`
 	Sku           string
 	ProductFamily string
-	Attributes    Awskms_Product_Attributes `gorm:"ForeignKey:Awskms_Product_AttributesID"`
 }
 type Awskms_Product_Attributes struct {
 	gorm.Model
 	Awskms_Product_AttributesID uint
+	Operation                   string
+	Servicename                 string
+	Servicecode                 string
 	Location                    string
 	LocationType                string
 	Usagetype                   string
-	Operation                   string
-	Servicecode                 string
 }
 
 type Awskms_Term struct {

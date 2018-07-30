@@ -104,14 +104,14 @@ type IngestionService_Product struct {
 type IngestionService_Product_Attributes struct {
 	gorm.Model
 	IngestionService_Product_AttributesID uint
-	Location                              string
-	LocationType                          string
 	Group                                 string
 	GroupDescription                      string
 	Usagetype                             string
 	Operation                             string
 	DataAction                            string
 	Servicecode                           string
+	Location                              string
+	LocationType                          string
 }
 
 type IngestionService_Term struct {

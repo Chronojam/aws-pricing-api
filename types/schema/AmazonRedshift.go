@@ -104,14 +104,15 @@ type AmazonRedshift_Product struct {
 type AmazonRedshift_Product_Attributes struct {
 	gorm.Model
 	AmazonRedshift_Product_AttributesID uint
+	FromLocationType                    string
+	ToLocationType                      string
 	Usagetype                           string
-	Operation                           string
+	Servicename                         string
 	Servicecode                         string
 	TransferType                        string
 	FromLocation                        string
-	FromLocationType                    string
 	ToLocation                          string
-	ToLocationType                      string
+	Operation                           string
 }
 
 type AmazonRedshift_Term struct {
