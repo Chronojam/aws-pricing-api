@@ -97,21 +97,22 @@ type AWSStorageGateway struct {
 type AWSStorageGateway_Product struct {
 	gorm.Model
 	AWSStorageGatewayID uint
+	Attributes          AWSStorageGateway_Product_Attributes `gorm:"ForeignKey:AWSStorageGateway_Product_AttributesID"`
 	Sku                 string
 	ProductFamily       string
-	Attributes          AWSStorageGateway_Product_Attributes `gorm:"ForeignKey:AWSStorageGateway_Product_AttributesID"`
 }
 type AWSStorageGateway_Product_Attributes struct {
 	gorm.Model
 	AWSStorageGateway_Product_AttributesID uint
-	FromLocationType                       string
+	FromLocation                           string
 	ToLocation                             string
 	ToLocationType                         string
 	Usagetype                              string
-	Operation                              string
 	Servicecode                            string
+	FromLocationType                       string
+	Operation                              string
+	Servicename                            string
 	TransferType                           string
-	FromLocation                           string
 }
 
 type AWSStorageGateway_Term struct {

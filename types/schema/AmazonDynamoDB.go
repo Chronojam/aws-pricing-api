@@ -97,21 +97,22 @@ type AmazonDynamoDB struct {
 type AmazonDynamoDB_Product struct {
 	gorm.Model
 	AmazonDynamoDBID uint
-	Attributes       AmazonDynamoDB_Product_Attributes `gorm:"ForeignKey:AmazonDynamoDB_Product_AttributesID"`
 	Sku              string
 	ProductFamily    string
+	Attributes       AmazonDynamoDB_Product_Attributes `gorm:"ForeignKey:AmazonDynamoDB_Product_AttributesID"`
 }
 type AmazonDynamoDB_Product_Attributes struct {
 	gorm.Model
 	AmazonDynamoDB_Product_AttributesID uint
-	ToLocation                          string
-	ToLocationType                      string
-	Usagetype                           string
+	FromLocation                        string
+	FromLocationType                    string
+	Servicename                         string
 	Operation                           string
 	Servicecode                         string
 	TransferType                        string
-	FromLocation                        string
-	FromLocationType                    string
+	ToLocation                          string
+	ToLocationType                      string
+	Usagetype                           string
 }
 
 type AmazonDynamoDB_Term struct {

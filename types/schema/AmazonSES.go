@@ -97,21 +97,21 @@ type AmazonSES struct {
 type AmazonSES_Product struct {
 	gorm.Model
 	AmazonSESID   uint
-	Attributes    AmazonSES_Product_Attributes `gorm:"ForeignKey:AmazonSES_Product_AttributesID"`
 	Sku           string
 	ProductFamily string
+	Attributes    AmazonSES_Product_Attributes `gorm:"ForeignKey:AmazonSES_Product_AttributesID"`
 }
 type AmazonSES_Product_Attributes struct {
 	gorm.Model
 	AmazonSES_Product_AttributesID uint
-	ToLocation                     string
-	ToLocationType                 string
-	Usagetype                      string
-	Operation                      string
 	Servicecode                    string
 	TransferType                   string
 	FromLocation                   string
 	FromLocationType               string
+	ToLocation                     string
+	ToLocationType                 string
+	Usagetype                      string
+	Operation                      string
 }
 
 type AmazonSES_Term struct {

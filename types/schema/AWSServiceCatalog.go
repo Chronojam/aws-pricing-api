@@ -97,19 +97,19 @@ type AWSServiceCatalog struct {
 type AWSServiceCatalog_Product struct {
 	gorm.Model
 	AWSServiceCatalogID uint
-	Sku                 string
 	ProductFamily       string
 	Attributes          AWSServiceCatalog_Product_Attributes `gorm:"ForeignKey:AWSServiceCatalog_Product_AttributesID"`
+	Sku                 string
 }
 type AWSServiceCatalog_Product_Attributes struct {
 	gorm.Model
 	AWSServiceCatalog_Product_AttributesID uint
-	Servicecode                            string
-	Location                               string
-	LocationType                           string
 	Usagetype                              string
 	Operation                              string
 	WithActiveUsers                        string
+	Servicecode                            string
+	Location                               string
+	LocationType                           string
 }
 
 type AWSServiceCatalog_Term struct {

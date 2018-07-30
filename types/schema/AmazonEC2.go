@@ -104,28 +104,32 @@ type AmazonEC2_Product struct {
 type AmazonEC2_Product_Attributes struct {
 	gorm.Model
 	AmazonEC2_Product_AttributesID uint
-	CurrentGeneration              string
-	LicenseModel                   string
-	EnhancedNetworkingSupported    string
-	PhysicalProcessor              string
-	ClockSpeed                     string
-	NetworkPerformance             string
-	ProcessorArchitecture          string
-	Operation                      string
 	DedicatedEbsThroughput         string
-	Tenancy                        string
+	Ecu                            string
+	Servicecode                    string
+	CurrentGeneration              string
+	ClockSpeed                     string
+	Usagetype                      string
+	Capacitystatus                 string
+	InstanceFamily                 string
+	NetworkPerformance             string
+	Operation                      string
+	Servicename                    string
+	EnhancedNetworkingSupported    string
 	ProcessorFeatures              string
 	Location                       string
 	LocationType                   string
-	InstanceType                   string
-	InstanceFamily                 string
-	Memory                         string
+	PhysicalProcessor              string
 	Storage                        string
-	Servicecode                    string
-	Vcpu                           string
-	OperatingSystem                string
-	Usagetype                      string
+	Tenancy                        string
+	LicenseModel                   string
+	NormalizationSizeFactor        string
 	PreInstalledSw                 string
+	InstanceType                   string
+	Vcpu                           string
+	Memory                         string
+	ProcessorArchitecture          string
+	OperatingSystem                string
 }
 
 type AmazonEC2_Term struct {

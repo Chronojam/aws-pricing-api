@@ -104,13 +104,14 @@ type AmazonInspector_Product struct {
 type AmazonInspector_Product_Attributes struct {
 	gorm.Model
 	AmazonInspector_Product_AttributesID uint
+	Operation                            string
+	FreeUsageIncluded                    string
+	Servicename                          string
+	Servicecode                          string
 	Description                          string
 	Location                             string
 	LocationType                         string
 	Usagetype                            string
-	Operation                            string
-	FreeUsageIncluded                    string
-	Servicecode                          string
 }
 
 type AmazonInspector_Term struct {

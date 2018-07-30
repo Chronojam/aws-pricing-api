@@ -104,13 +104,13 @@ type AmazonWorkMail_Product struct {
 type AmazonWorkMail_Product_Attributes struct {
 	gorm.Model
 	AmazonWorkMail_Product_AttributesID uint
+	Servicecode                         string
 	Location                            string
 	LocationType                        string
 	Usagetype                           string
 	Operation                           string
 	FreeTier                            string
 	MailboxStorage                      string
-	Servicecode                         string
 }
 
 type AmazonWorkMail_Term struct {

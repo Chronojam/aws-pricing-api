@@ -97,19 +97,19 @@ type AWSBudgets struct {
 type AWSBudgets_Product struct {
 	gorm.Model
 	AWSBudgetsID  uint
+	Sku           string
 	ProductFamily string
 	Attributes    AWSBudgets_Product_Attributes `gorm:"ForeignKey:AWSBudgets_Product_AttributesID"`
-	Sku           string
 }
 type AWSBudgets_Product_Attributes struct {
 	gorm.Model
 	AWSBudgets_Product_AttributesID uint
+	Servicecode                     string
+	Location                        string
 	LocationType                    string
 	GroupDescription                string
 	Usagetype                       string
 	Operation                       string
-	Servicecode                     string
-	Location                        string
 }
 
 type AWSBudgets_Term struct {

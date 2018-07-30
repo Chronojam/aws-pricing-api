@@ -104,13 +104,14 @@ type AmazonKinesisFirehose_Product struct {
 type AmazonKinesisFirehose_Product_Attributes struct {
 	gorm.Model
 	AmazonKinesisFirehose_Product_AttributesID uint
+	Servicename                                string
+	Servicecode                                string
+	Description                                string
 	Location                                   string
 	LocationType                               string
 	Group                                      string
 	Usagetype                                  string
 	Operation                                  string
-	Servicecode                                string
-	Description                                string
 }
 
 type AmazonKinesisFirehose_Term struct {

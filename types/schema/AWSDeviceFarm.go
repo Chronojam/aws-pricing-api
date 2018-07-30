@@ -97,22 +97,23 @@ type AWSDeviceFarm struct {
 type AWSDeviceFarm_Product struct {
 	gorm.Model
 	AWSDeviceFarmID uint
+	Attributes      AWSDeviceFarm_Product_Attributes `gorm:"ForeignKey:AWSDeviceFarm_Product_AttributesID"`
 	Sku             string
 	ProductFamily   string
-	Attributes      AWSDeviceFarm_Product_Attributes `gorm:"ForeignKey:AWSDeviceFarm_Product_AttributesID"`
 }
 type AWSDeviceFarm_Product_Attributes struct {
 	gorm.Model
 	AWSDeviceFarm_Product_AttributesID uint
-	Operation                          string
+	ExecutionMode                      string
 	Servicecode                        string
+	Description                        string
+	Operation                          string
+	DeviceOs                           string
+	MeterMode                          string
+	Servicename                        string
 	Location                           string
 	LocationType                       string
 	Usagetype                          string
-	DeviceOs                           string
-	ExecutionMode                      string
-	MeterMode                          string
-	Description                        string
 }
 
 type AWSDeviceFarm_Term struct {

@@ -97,21 +97,22 @@ type AmazonVPC struct {
 type AmazonVPC_Product struct {
 	gorm.Model
 	AmazonVPCID   uint
-	Sku           string
 	ProductFamily string
 	Attributes    AmazonVPC_Product_Attributes `gorm:"ForeignKey:AmazonVPC_Product_AttributesID"`
+	Sku           string
 }
 type AmazonVPC_Product_Attributes struct {
 	gorm.Model
 	AmazonVPC_Product_AttributesID uint
-	Usagetype                      string
-	Operation                      string
-	Servicecode                    string
-	TransferType                   string
-	FromLocation                   string
-	FromLocationType               string
 	ToLocation                     string
 	ToLocationType                 string
+	Usagetype                      string
+	Operation                      string
+	Servicename                    string
+	Servicecode                    string
+	TransferType                   string
+	FromLocationType               string
+	FromLocation                   string
 }
 
 type AmazonVPC_Term struct {

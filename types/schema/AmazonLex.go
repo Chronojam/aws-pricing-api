@@ -105,15 +105,16 @@ type AmazonLex_Product_Attributes struct {
 	gorm.Model
 	AmazonLex_Product_AttributesID uint
 	InputMode                      string
-	OutputMode                     string
-	Location                       string
-	Usagetype                      string
-	Operation                      string
-	GroupDescription               string
-	SupportedModes                 string
-	Servicecode                    string
 	LocationType                   string
 	Group                          string
+	GroupDescription               string
+	Usagetype                      string
+	Operation                      string
+	OutputMode                     string
+	Servicename                    string
+	SupportedModes                 string
+	Servicecode                    string
+	Location                       string
 }
 
 type AmazonLex_Term struct {

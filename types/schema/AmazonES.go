@@ -104,14 +104,15 @@ type AmazonES_Product struct {
 type AmazonES_Product_Attributes struct {
 	gorm.Model
 	AmazonES_Product_AttributesID uint
-	ToLocationType                string
-	Usagetype                     string
-	Operation                     string
 	Servicecode                   string
-	TransferType                  string
-	FromLocation                  string
 	FromLocationType              string
 	ToLocation                    string
+	Usagetype                     string
+	Servicename                   string
+	TransferType                  string
+	FromLocation                  string
+	ToLocationType                string
+	Operation                     string
 }
 
 type AmazonES_Term struct {

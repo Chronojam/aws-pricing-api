@@ -104,12 +104,13 @@ type AWSLambda_Product struct {
 type AWSLambda_Product_Attributes struct {
 	gorm.Model
 	AWSLambda_Product_AttributesID uint
-	Operation                      string
 	Servicecode                    string
-	TransferType                   string
 	FromLocation                   string
 	FromLocationType               string
 	ToLocation                     string
+	Operation                      string
+	Servicename                    string
+	TransferType                   string
 	ToLocationType                 string
 	Usagetype                      string
 }

@@ -104,14 +104,14 @@ type AmazonSimpleDB_Product struct {
 type AmazonSimpleDB_Product_Attributes struct {
 	gorm.Model
 	AmazonSimpleDB_Product_AttributesID uint
+	ToLocation                          string
+	ToLocationType                      string
 	Usagetype                           string
 	Operation                           string
 	Servicecode                         string
 	TransferType                        string
 	FromLocation                        string
 	FromLocationType                    string
-	ToLocation                          string
-	ToLocationType                      string
 }
 
 type AmazonSimpleDB_Term struct {

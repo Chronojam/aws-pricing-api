@@ -104,12 +104,13 @@ type AWSDatabaseMigrationSvc_Product struct {
 type AWSDatabaseMigrationSvc_Product_Attributes struct {
 	gorm.Model
 	AWSDatabaseMigrationSvc_Product_AttributesID uint
+	TransferType                                 string
+	Servicename                                  string
 	ToLocation                                   string
 	ToLocationType                               string
 	Usagetype                                    string
 	Operation                                    string
 	Servicecode                                  string
-	TransferType                                 string
 	FromLocation                                 string
 	FromLocationType                             string
 }

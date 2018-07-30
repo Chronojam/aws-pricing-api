@@ -97,25 +97,26 @@ type AmazonElastiCache struct {
 type AmazonElastiCache_Product struct {
 	gorm.Model
 	AmazonElastiCacheID uint
-	ProductFamily       string
 	Attributes          AmazonElastiCache_Product_Attributes `gorm:"ForeignKey:AmazonElastiCache_Product_AttributesID"`
 	Sku                 string
+	ProductFamily       string
 }
 type AmazonElastiCache_Product_Attributes struct {
 	gorm.Model
 	AmazonElastiCache_Product_AttributesID uint
-	Location                               string
-	InstanceFamily                         string
 	Vcpu                                   string
+	Memory                                 string
 	NetworkPerformance                     string
-	CacheEngine                            string
-	Operation                              string
-	Servicecode                            string
+	Location                               string
+	LocationType                           string
 	InstanceType                           string
 	CurrentGeneration                      string
-	Memory                                 string
+	InstanceFamily                         string
+	Operation                              string
+	Servicename                            string
+	Servicecode                            string
+	CacheEngine                            string
 	Usagetype                              string
-	LocationType                           string
 }
 
 type AmazonElastiCache_Term struct {

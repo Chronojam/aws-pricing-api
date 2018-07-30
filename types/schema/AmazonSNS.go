@@ -97,21 +97,22 @@ type AmazonSNS struct {
 type AmazonSNS_Product struct {
 	gorm.Model
 	AmazonSNSID   uint
-	Sku           string
 	ProductFamily string
 	Attributes    AmazonSNS_Product_Attributes `gorm:"ForeignKey:AmazonSNS_Product_AttributesID"`
+	Sku           string
 }
 type AmazonSNS_Product_Attributes struct {
 	gorm.Model
 	AmazonSNS_Product_AttributesID uint
-	TransferType                   string
-	FromLocation                   string
 	FromLocationType               string
-	ToLocation                     string
 	ToLocationType                 string
-	Usagetype                      string
 	Operation                      string
 	Servicecode                    string
+	FromLocation                   string
+	ToLocation                     string
+	Usagetype                      string
+	Servicename                    string
+	TransferType                   string
 }
 
 type AmazonSNS_Term struct {

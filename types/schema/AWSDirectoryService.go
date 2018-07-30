@@ -104,14 +104,15 @@ type AWSDirectoryService_Product struct {
 type AWSDirectoryService_Product_Attributes struct {
 	gorm.Model
 	AWSDirectoryService_Product_AttributesID uint
-	DirectoryType                            string
-	DirectoryTypeDescription                 string
 	Servicecode                              string
 	Location                                 string
+	DirectoryType                            string
+	Servicename                              string
 	LocationType                             string
 	Usagetype                                string
 	Operation                                string
 	DirectorySize                            string
+	DirectoryTypeDescription                 string
 }
 
 type AWSDirectoryService_Term struct {

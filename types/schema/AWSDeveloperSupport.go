@@ -104,26 +104,26 @@ type AWSDeveloperSupport_Product struct {
 type AWSDeveloperSupport_Product_Attributes struct {
 	gorm.Model
 	AWSDeveloperSupport_Product_AttributesID uint
-	LocationType                             string
-	ArchitecturalReview                      string
-	OperationsSupport                        string
-	TechnicalSupport                         string
-	Servicecode                              string
 	ArchitectureSupport                      string
 	BestPractices                            string
-	Training                                 string
-	WhoCanOpenCases                          string
-	Location                                 string
-	Operation                                string
-	CustomerServiceAndCommunities            string
 	ProactiveGuidance                        string
-	ProgrammaticCaseManagement               string
-	ThirdpartySoftwareSupport                string
-	Usagetype                                string
-	AccountAssistance                        string
+	Servicecode                              string
+	Location                                 string
 	CaseSeverityresponseTimes                string
+	OperationsSupport                        string
+	ProgrammaticCaseManagement               string
+	TechnicalSupport                         string
+	LocationType                             string
+	CustomerServiceAndCommunities            string
 	IncludedServices                         string
 	LaunchSupport                            string
+	Training                                 string
+	WhoCanOpenCases                          string
+	Usagetype                                string
+	Operation                                string
+	AccountAssistance                        string
+	ArchitecturalReview                      string
+	ThirdpartySoftwareSupport                string
 }
 
 type AWSDeveloperSupport_Term struct {

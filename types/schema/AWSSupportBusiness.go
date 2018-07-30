@@ -104,26 +104,26 @@ type AWSSupportBusiness_Product struct {
 type AWSSupportBusiness_Product_Attributes struct {
 	gorm.Model
 	AWSSupportBusiness_Product_AttributesID uint
-	ThirdpartySoftwareSupport               string
-	WhoCanOpenCases                         string
 	Usagetype                               string
-	IncludedServices                        string
-	ProactiveGuidance                       string
 	LaunchSupport                           string
-	ProgrammaticCaseManagement              string
+	WhoCanOpenCases                         string
 	Servicecode                             string
-	Operation                               string
-	AccountAssistance                       string
-	TechnicalSupport                        string
+	LocationType                            string
+	BestPractices                           string
+	ProactiveGuidance                       string
+	Training                                string
 	Location                                string
 	CaseSeverityresponseTimes               string
-	CustomerServiceAndCommunities           string
-	BestPractices                           string
 	OperationsSupport                       string
-	Training                                string
-	LocationType                            string
-	ArchitecturalReview                     string
+	ProgrammaticCaseManagement              string
 	ArchitectureSupport                     string
+	AccountAssistance                       string
+	ArchitecturalReview                     string
+	CustomerServiceAndCommunities           string
+	IncludedServices                        string
+	TechnicalSupport                        string
+	ThirdpartySoftwareSupport               string
+	Operation                               string
 }
 
 type AWSSupportBusiness_Term struct {

@@ -104,7 +104,6 @@ type AmazonCloudSearch_Product struct {
 type AmazonCloudSearch_Product_Attributes struct {
 	gorm.Model
 	AmazonCloudSearch_Product_AttributesID uint
-	TransferType                           string
 	FromLocation                           string
 	FromLocationType                       string
 	ToLocation                             string
@@ -112,6 +111,7 @@ type AmazonCloudSearch_Product_Attributes struct {
 	Usagetype                              string
 	Operation                              string
 	Servicecode                            string
+	TransferType                           string
 }
 
 type AmazonCloudSearch_Term struct {

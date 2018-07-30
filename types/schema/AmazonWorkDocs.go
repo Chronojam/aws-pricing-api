@@ -104,16 +104,17 @@ type AmazonWorkDocs_Product struct {
 type AmazonWorkDocs_Product_Attributes struct {
 	gorm.Model
 	AmazonWorkDocs_Product_AttributesID uint
-	Description                         string
-	LocationType                        string
-	Storage                             string
-	Operation                           string
-	FreeTrial                           string
-	MaximumStorageVolume                string
 	Servicecode                         string
-	Location                            string
-	Usagetype                           string
+	LocationType                        string
+	FreeTrial                           string
+	Operation                           string
+	MaximumStorageVolume                string
 	MinimumStorageVolume                string
+	Servicename                         string
+	Description                         string
+	Location                            string
+	Storage                             string
+	Usagetype                           string
 }
 
 type AmazonWorkDocs_Term struct {

@@ -104,14 +104,15 @@ type AmazonS3_Product struct {
 type AmazonS3_Product_Attributes struct {
 	gorm.Model
 	AmazonS3_Product_AttributesID uint
-	FromLocation                  string
+	TransferType                  string
 	FromLocationType              string
-	ToLocation                    string
 	ToLocationType                string
 	Usagetype                     string
-	Operation                     string
 	Servicecode                   string
-	TransferType                  string
+	FromLocation                  string
+	ToLocation                    string
+	Operation                     string
+	Servicename                   string
 }
 
 type AmazonS3_Term struct {

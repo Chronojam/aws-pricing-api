@@ -104,13 +104,14 @@ type AmazonCloudDirectory_Product struct {
 type AmazonCloudDirectory_Product_Attributes struct {
 	gorm.Model
 	AmazonCloudDirectory_Product_AttributesID uint
+	Usagetype                                 string
+	Operation                                 string
+	Servicename                               string
 	Servicecode                               string
 	Location                                  string
 	LocationType                              string
 	StorageClass                              string
 	VolumeType                                string
-	Usagetype                                 string
-	Operation                                 string
 }
 
 type AmazonCloudDirectory_Term struct {

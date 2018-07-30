@@ -109,6 +109,7 @@ type AWSConfig_Product_Attributes struct {
 	LocationType                   string
 	Usagetype                      string
 	Operation                      string
+	Servicename                    string
 }
 
 type AWSConfig_Term struct {

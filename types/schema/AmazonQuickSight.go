@@ -97,22 +97,23 @@ type AmazonQuickSight struct {
 type AmazonQuickSight_Product struct {
 	gorm.Model
 	AmazonQuickSightID uint
-	Sku                string
 	ProductFamily      string
 	Attributes         AmazonQuickSight_Product_Attributes `gorm:"ForeignKey:AmazonQuickSight_Product_AttributesID"`
+	Sku                string
 }
 type AmazonQuickSight_Product_Attributes struct {
 	gorm.Model
 	AmazonQuickSight_Product_AttributesID uint
+	Servicecode                           string
+	SubscriptionType                      string
+	Operation                             string
+	Edition                               string
+	Servicename                           string
+	Location                              string
 	LocationType                          string
 	Group                                 string
-	Edition                               string
-	Servicecode                           string
-	Location                              string
 	GroupDescription                      string
 	Usagetype                             string
-	Operation                             string
-	SubscriptionType                      string
 }
 
 type AmazonQuickSight_Term struct {

@@ -104,11 +104,12 @@ type AWSCloudTrail_Product struct {
 type AWSCloudTrail_Product_Attributes struct {
 	gorm.Model
 	AWSCloudTrail_Product_AttributesID uint
-	Servicecode                        string
-	Location                           string
 	LocationType                       string
 	Usagetype                          string
 	Operation                          string
+	Servicename                        string
+	Servicecode                        string
+	Location                           string
 }
 
 type AWSCloudTrail_Term struct {

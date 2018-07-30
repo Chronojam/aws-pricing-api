@@ -97,9 +97,9 @@ type AlexaWebInfoService struct {
 type AlexaWebInfoService_Product struct {
 	gorm.Model
 	AlexaWebInfoServiceID uint
+	Sku                   string
 	ProductFamily         string
 	Attributes            AlexaWebInfoService_Product_Attributes `gorm:"ForeignKey:AlexaWebInfoService_Product_AttributesID"`
-	Sku                   string
 }
 type AlexaWebInfoService_Product_Attributes struct {
 	gorm.Model
